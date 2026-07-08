@@ -4,7 +4,8 @@
     "outFile": "app.js",
     "strict": true,
     "lib": ["DOM", "ES2015"],
-    "sourceMap": true
+    "sourceMap": true,
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "*.ts"
