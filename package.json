@@ -1,0 +1,24 @@
+{
+  "name": "excel",
+  "version": "1.0.0",
+  "description": "#Excel",
+  "main": "index.js",
+  "scripts": {
+    "test": "app.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dkp-1312-1/Excel.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dkp-1312-1/Excel/issues"
+  },
+  "homepage": "https://github.com/dkp-1312-1/Excel#readme",
+  "devDependencies": {
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3"
+  }
+}

@@ -17,7 +17,7 @@ body,html
 }
 #scroll-content
 {
-    position: relative;
+    position: absolute;
     top:0;
     left:0;
     pointer-events: none;
