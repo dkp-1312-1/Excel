@@ -1,7 +1,5 @@
-// Phase 0: Project Setup & Architecture (architecture.ts)
-// ==========================================
+// Project Setup & Architecture (architecture.ts)
 // 1. CONFIGURATION & INTERFACES
-// ==========================================
 
 interface GridConfig {
     totalRows: number;
@@ -17,10 +15,8 @@ interface CellRecord {
     salary: number;
 }
 
-// ==========================================
 // 2. ROW & COLUMN MANAGERS
 // Handles custom resizing of rows and columns
-// ==========================================
 
 class RowManager {
     private customHeight: Map<number, number> = new Map();
@@ -46,10 +42,8 @@ class ColumnManager {
 }
 
 
-// ==========================================
 // 3. DATA STORE (The Model)
 // Uses a Sparse Matrix to optimize memory usage
-// ==========================================
 
 class DataStore {
     //Key format: "row,col" -> Value
@@ -90,10 +84,8 @@ class DataStore {
     }
 }
 
-// ==========================================
 // 4. SELECTION MANAGER
 // Tracks active cell and selected ranges
-// ==========================================
 
 class SelectionManager {
     private startRow: number = 1;
@@ -118,9 +110,8 @@ class SelectionManager {
 }
 
 
-// ==========================================
 // 5. COMMAND PATTERN (For Undo/Redo)
-// 
+
 
 interface Command {
     execute(): void;
@@ -139,9 +130,7 @@ class CommandManager {
 }
 
 
-// ==========================================
 // 6. MAIN GRID CONTROLLER (Bootstrapper)
-// ==========================================
 
 class GridApp {
     public config: GridConfig;
