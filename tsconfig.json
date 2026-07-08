@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "outFile": "app.js",
+    "strict": true,
+    "lib": ["DOM", "ES2015"],
+    "sourceMap": true
+  },
+  "include": [
+    "*.ts"
+  ]
+}

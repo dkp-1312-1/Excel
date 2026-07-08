@@ -144,12 +144,16 @@ class CommandManager {
 // ==========================================
 
 class GridApp {
-    private config: GridConfig;
-    private dataStore: DataStore;
-    private rowManager: RowManager;
-    private colManager: ColumnManager;
-    private selectionManager: SelectionManager;
-    private commandManager: CommandManager;
+    public config: GridConfig;
+    public dataStore: DataStore;
+    public rowManager: RowManager;
+    public colManager: ColumnManager;
+    public selectionManager: SelectionManager;
+    public commandManager: CommandManager;
+    
+    public renderer!: Renderer;
+    public inputHandler!: InputHandler;
+
     constructor(config: GridConfig) {
         this.config = config;
 
@@ -163,6 +167,11 @@ class GridApp {
     private init(): void {
         this.dataStore.generateInitialData(50000);
     }
+    
+    public setupUI(): void {
+        this.renderer = new Renderer(this.config, this.dataStore, this.rowManager, this.colManager, this.selectionManager);
+        this.inputHandler = new InputHandler(this.config, this.rowManager, this.colManager, this.selectionManager, this.renderer);
+    }
 }
 const appConfig:GridConfig={
     totalRows:100000,
@@ -171,3 +180,6 @@ const appConfig:GridConfig={
     defaultColWidth:100
 };
 const myExcelGrid=new GridApp(appConfig);
+window.onload = () => {
+    myExcelGrid.setupUI();
+};
