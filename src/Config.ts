@@ -8,5 +8,7 @@ export const CONFIG = {
     font: '14px "Segoe UI", sans-serif',
     headerBg: '#f3f2f1',
     gridColor: '#e1dfdd',
-    textColor: '#000000'
+    textColor: '#000000',
+    selectionBg:'rgbA(33,115,70,0.1)',
+    selectionBorder:'#217346'
 };
