@@ -1,3 +1,4 @@
+import { CONFIG } from "./Config.js";
 export class SelectionManager
 {
     public startRow:number=-1;
@@ -9,7 +10,7 @@ export class SelectionManager
     {
         this.startRow=row;
         this.startCol=col;
-        this.endRow=col;
+        this.endRow=row;
         this.endCol=col;
     }
     public setEnd(row:number,col:number):void
@@ -29,5 +30,15 @@ export class SelectionManager
     public hasSelection():boolean
     {
         return this.startRow!==-1;
+    }
+    public selectWholeColumn(col:number):void
+    {
+        this.setStart(1,col);
+        this.setEnd(CONFIG.totalRows,col);
+    }
+    public selectWholeRow(row:number):void
+    {
+        this.setStart(row,1);
+        this.setEnd(row,CONFIG.totalCols);
     }
 }
