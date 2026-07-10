@@ -17,10 +17,13 @@ export class DimensionManager
 
     public getColX(col:number):number
     {
-        let totalWidthRequired:number=0;
-        for(let c=1;c<col;c++)
+        let totalWidthRequired:number=(col-1)*CONFIG.colWidth;
+        for(const [column,width] of this.customWidths.entries())
         {
-            totalWidthRequired+=this.getColWidth(c);
+            if(column<col)
+            {
+                totalWidthRequired+=(width-CONFIG.colWidth);
+            }  
         }
         return totalWidthRequired;
     }
@@ -34,11 +37,15 @@ export class DimensionManager
     }
     public getRowY(row:number):number
     {
-        let totalHeightRequired:number=0;
-        for(let r=1;r<row;r++)
+        let totalHeightRequired:number=(row-1)*CONFIG.rowHeight;
+        for(const [tempRow,height] of this.customHeights.entries())
         {
-            totalHeightRequired+=this.getRowHeight(r);
+            if(tempRow<row)
+            {
+                totalHeightRequired+=(height-CONFIG.rowHeight);
+            }
         }
         return totalHeightRequired;
     }
+    
 }

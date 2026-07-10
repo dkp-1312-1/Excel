@@ -18,7 +18,8 @@ export class GridApp {
     private dimensionManager: DimensionManager;
     private statsManager: StatsManager;
     private inputManager: InputManager;
- 
+
+    private isRenderPending:boolean=false;
     constructor() {
         this.container = document.getElementById('grid-container') as HTMLElement;
         this.canvas = document.getElementById('grid-canvas') as HTMLCanvasElement;
@@ -31,15 +32,9 @@ export class GridApp {
         this.dimensionManager = new DimensionManager();
         this.statsManager = new StatsManager(this.statsEl, this.dataStore, this.selection);
         this.inputManager = new InputManager(
-            this.container,
-            this.canvas,
-            this.dimensionManager,
-            this.selection,
-            this.statsManager,
-            () => this.render(),
-            () => this.updateScrollbarSize()
+            this.container,this.canvas,this.dimensionManager,this.selection,this.statsManager,this.dataStore,() => this.render(),() => this.updateScrollbarSize()
         );
-
+        
         this.init();
     }
  
@@ -55,8 +50,8 @@ export class GridApp {
     }
 
     private updateScrollbarSize(): void {
-        this.scrollContent.style.width = `${CONFIG.headerWidth + (CONFIG.totalCols * CONFIG.colWidth)}px`;
-        this.scrollContent.style.height = `${CONFIG.headerHeight + (CONFIG.totalRows * CONFIG.rowHeight)}px`;
+        this.scrollContent.style.width = `${CONFIG.headerWidth + this.dimensionManager.getColX(CONFIG.totalCols)+this.dimensionManager.getColWidth(CONFIG.totalCols)}px`;
+        this.scrollContent.style.height = `${CONFIG.headerHeight + this.dimensionManager.getRowY(CONFIG.totalRows)+this.dimensionManager.getRowHeight(CONFIG.totalRows)}px`;
     }
  
     private resize(): void {
@@ -66,6 +61,21 @@ export class GridApp {
     }
  
     private render(): void {
+
+        if(this.isRenderPending) return;
+
+        //make flag true when executing render
+        this.isRenderPending=true;
+
+        requestAnimationFrame(()=>{
+            this.executeRender();
+            //make flag true after executing render
+            this.isRenderPending=false;
+        })
+        
+    }
+    private executeRender():void
+    {
         this.renderer.drawSelection(
             this.container.scrollLeft,
             this.container.scrollTop,

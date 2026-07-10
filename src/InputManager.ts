@@ -2,6 +2,7 @@ import { CONFIG } from './Config.js';
 import { DimensionManager } from './DimensionManager.js';
 import { SelectionManager } from './SelectionManager.js';
 import { StatsManager } from './StatsManager.js';
+import { DataStore } from './DataStore.js';
 
 export class InputManager {
     private isSelecting: boolean = false;
@@ -10,20 +11,59 @@ export class InputManager {
     private startMousePos: number = 0;
     private startSize: number = 0;
 
+    private editor!:HTMLInputElement;
     constructor(
         private container: HTMLElement,
         private canvas: HTMLCanvasElement,
         private dimensionManager: DimensionManager,
         private selection: SelectionManager,
         private statsManager: StatsManager,
+        private dataStore:DataStore,
         private renderCallback: () => void,
         private updateScrollbarCallback: () => void
-    ) {}
+    ) {
+        
+        this.createEditor();
+    }
+
+    private createEditor():void
+    {
+        this.editor=document.createElement('input');
+        this.editor.type='text';
+        this.editor.style.position = 'absolute';
+        this.editor.style.display = 'none';
+        this.editor.style.boxSizing='border-box';
+        this.editor.style.border='2px solid #02B202';
+        this.editor.style.outline='none';
+        this.editor.style.font=CONFIG.font;
+        this.editor.style.padding='4px';
+        this.editor.style.zIndex = '100';
+        this.container.appendChild(this.editor);
+
+        this.editor.addEventListener('blur',()=>this.commitEdit());
+        this.editor.addEventListener('keydown',(e)=>{
+            if(e.key==='Enter')
+            {
+                this.commitEdit();
+            }
+        });
+
+        this.container.addEventListener('scroll',()=>{
+            if(this.editor.style.display==='block')
+            {
+                this.commitEdit();
+            }
+        })
+    }
 
     public bindEvents(): void {
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         window.addEventListener('mouseup', () => this.handleMouseUp());
+
+        this.canvas.addEventListener('dblclick',(e)=>{
+            this.handleDoubleClick(e);
+        });
     }
 
     private getCellFromEvent(e: MouseEvent) {
@@ -52,6 +92,12 @@ export class InputManager {
 
     private handleMouseDown(e: MouseEvent): void {
         if (e.button !== 0) return;
+
+        if(this.editor.style.display==='block')
+        {
+            this.commitEdit();
+        }
+
         const { row, col, mouseX, mouseY } = this.getCellFromEvent(e);
 
         // Start Resizing
@@ -145,5 +191,60 @@ export class InputManager {
         }
         this.resizingCol = -1;
         this.resizingRow = -1;
+    }
+
+    private handleDoubleClick(e:MouseEvent):void
+    {
+        if(e.button!==0)
+        {
+            return;
+        }
+        const {row,col,mouseX,mouseY}=this.getCellFromEvent(e);
+
+        if(mouseX<=CONFIG.headerWidth||mouseY<=CONFIG.headerHeight)
+        {
+            return;
+        }
+        this.openEditor(row,col);
+    }
+
+    private openEditor(row:number,col:number)
+    {
+        const scrollX = this.container.scrollLeft;
+        const scrollY = this.container.scrollTop;
+
+        const x = CONFIG.headerWidth + this.dimensionManager.getColX(col);
+        const y = CONFIG.headerHeight + this.dimensionManager.getRowY(row);
+        const w = this.dimensionManager.getColWidth(col);
+        const h = this.dimensionManager.getRowHeight(row);
+
+        this.editor.style.left = `${x}px`;
+        this.editor.style.top = `${y}px`;
+        this.editor.style.width = `${w}px`;
+        this.editor.style.height = `${h}px`;
+        this.editor.style.display = 'block';
+
+        const currentVal=this.dataStore.getValue(row,col);
+        this.editor.value=currentVal.toString();
+        this.editor.focus();
+    }
+
+    private commitEdit():void
+    {
+        if(this.editor.style.display==='none')
+        {
+            return;
+        }
+        const range=this.selection.getRange();
+        const row=range.rMin;
+        const col=range.cMin;
+
+        const newValue=this.editor.value;
+        this.dataStore.setValue(row,col,newValue);
+        this.editor.style.display='none';
+        this.editor.blur();
+
+        this.renderCallback();
+        this.statsManager.updateStats();
     }
 }
