@@ -1,5 +1,5 @@
-import { GridApp } from './GridApp.js';
+import { Grid } from './Grid.js';
  
 document.addEventListener('DOMContentLoaded', () => {
-    new GridApp();
+    new Grid();
 });
