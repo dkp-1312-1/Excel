@@ -27,7 +27,7 @@ export class GridRenderer {
 
         //Calculate visible range of scroll
         const { startRow, endRow, startCol, endCol } = viewportManager.getVisibleRange(scrollX, scrollY, width, height);
-
+        // console.log({ startRow, endRow, startCol, endCol, scrollX, scrollY, width, height });
         this.ctx.font = CONFIG.font;
 
         //make text align in terms of top,middle,bottom

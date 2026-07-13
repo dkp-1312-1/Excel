@@ -1,6 +1,7 @@
 export const CONFIG = {
     totalRows: 100000,
     totalCols: 500,
+    dataRows:50000,
     rowHeight: 25,
     colWidth: 100,
     headerWidth: 50,

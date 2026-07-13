@@ -256,7 +256,7 @@ export class EditManager {
         const y = CONFIG.headerHeight + this.rowModel.getRowY(row);
         const w = this.colModel.getColWidth(col);
         const h = this.rowModel.getRowHeight(row);
-
+        console.log(x, y, scrollX, scrollY);
         this.editor.style.left = `${x}px`;
         this.editor.style.top = `${y}px`;
         this.editor.style.width = `${w}px`;

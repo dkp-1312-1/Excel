@@ -101,7 +101,7 @@ export class Grid {
 
         requestAnimationFrame(()=>{
             this.executeRender();
-            //make flag true after executing render
+            //make flag false after executing render
             this.isRenderPending=false;
         })
         

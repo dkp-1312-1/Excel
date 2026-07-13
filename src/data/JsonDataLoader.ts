@@ -13,7 +13,7 @@ export class JsonDataLoader {
             dataStore.setValue(0, 5, 'Salary');
             
             // Generating data instead of fetching from url
-            for (let row: number = 1; row <= CONFIG.totalRows; row++) {
+            for (let row: number = 1; row <= CONFIG.dataRows; row++) {
                 const firstName: string = firstNames[Math.floor(Math.random() * firstNames.length)]!;
                 const lastName: string = lastNames[Math.floor(Math.random() * lastNames.length)]!;
                 const age: number = Math.floor(Math.random() * 40) + 20; // Random age between 20 and 59
