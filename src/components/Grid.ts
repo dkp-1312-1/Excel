@@ -44,7 +44,7 @@ export class Grid {
         this.viewportManager = new ViewportManager(this.rowModel, this.colModel);
         this.summaryCalculator = new SummaryCalculator(this.statsEl, this.dataStore, this.selection);
         this.editManager = new EditManager(
-            this.container, this.canvas, this.rowModel, this.colModel, this.selection, this.summaryCalculator, this.dataStore, this.cmdManager, () => this.render(), () => this.updateScrollbarSize()
+            this.container, this.canvas, this.rowModel, this.colModel, this.selection, this.summaryCalculator, this.dataStore, this.cmdManager, this.viewportManager,() => this.render(), () => this.updateScrollbarSize()
         );
         
         this.init();

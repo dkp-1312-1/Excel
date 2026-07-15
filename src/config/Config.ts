@@ -35,5 +35,7 @@ export const CONFIG = {
     headerBorderColor: '#ccc',
     textBaseline: 'middle' as CanvasTextBaseline,
     textAlignCenter: 'center' as CanvasTextAlign,
-    textAlignLeft: 'left' as CanvasTextAlign
+    textAlignLeft: 'left' as CanvasTextAlign,
+
+    jsonFilePath:`/mnt/d/Task 3/Excel` as string
 };

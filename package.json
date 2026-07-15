@@ -18,8 +18,9 @@
   },
   "homepage": "https://github.com/dkp-1312-1/Excel#readme",
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "tsx": "^4.23.0",
     "typescript": "^6.0.3"
   },
-  "type": "commonjs"
+  "type": "module"
 }

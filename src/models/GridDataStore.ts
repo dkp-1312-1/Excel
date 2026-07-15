@@ -11,4 +11,14 @@ export class GridDataStore
     {
         this.data.set(`${row},${col}`, new CellModel(row, col, value));
     }
+    public exportData(): Record<string, string | number> {
+        const rawObject: Record<string, string | number> = {};
+        
+        // Loop through the map and assign keys/values to the plain object
+        this.data.forEach((value, key) => {
+            rawObject[key] = value.value
+        });
+        
+        return rawObject;
+    }
 }

@@ -8,6 +8,7 @@ import { CommandManager } from './CommandManager.js';
 import { EditCellCommand } from '../commands/EditCellCommand.js';
 import { ResizeColumnCommand } from '../commands/ResizeColumnCommand.js';
 import { ResizeRowCommand } from '../commands/ResizeRowCommand.js';
+import type { ViewportManager } from './ViewportManager.js';
 
 export class EditManager {
     private isSelecting: boolean = false;
@@ -19,7 +20,7 @@ export class EditManager {
     private lastMouseDownY: number = 0;
     private lastDragTime: number = 0;
 
-    private editor!:HTMLInputElement;
+    private editor!: HTMLInputElement;
     constructor(
         private container: HTMLElement,
         private canvas: HTMLCanvasElement,
@@ -29,17 +30,17 @@ export class EditManager {
         private summaryCalculator: SummaryCalculator,
         private dataStore: GridDataStore,
         private cmdManager: CommandManager,
+        private viewPortManager:ViewportManager,
         private renderCallback: () => void,
         private updateScrollbarCallback: () => void
     ) {
-        
+
         this.createEditor();
     }
 
-    private createEditor():void
-    {
-        this.editor=document.createElement('input');
-        this.editor.type='text';
+    private createEditor(): void {
+        this.editor = document.createElement('input');
+        this.editor.type = 'text';
         this.editor.style.position = 'absolute';
         this.editor.style.display = 'none';
         this.editor.style.boxSizing = 'border-box';
@@ -50,17 +51,15 @@ export class EditManager {
         this.editor.style.zIndex = CONFIG.editorZIndex;
         this.container.appendChild(this.editor);
 
-        this.editor.addEventListener('blur',()=>this.commitEdit());
-        this.editor.addEventListener('keydown',(e)=>{
-            if(e.key === CONFIG.commitKey)
-            {
+        this.editor.addEventListener('blur', () => this.commitEdit());
+        this.editor.addEventListener('keydown', (e) => {
+            if (e.key === CONFIG.commitKey) {
                 this.commitEdit();
             }
         });
 
-        this.container.addEventListener('scroll',()=>{
-            if(this.editor.style.display==='block')
-            {
+        this.container.addEventListener('scroll', () => {
+            if (this.editor.style.display === 'block') {
                 this.commitEdit();
             }
         })
@@ -71,8 +70,12 @@ export class EditManager {
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         window.addEventListener('mouseup', () => this.handleMouseUp());
 
-        this.canvas.addEventListener('dblclick',(e)=>{
+        this.canvas.addEventListener('dblclick', (e) => {
             this.handleDoubleClick(e);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            this.handleKeyDown(e);
         });
     }
 
@@ -87,12 +90,12 @@ export class EditManager {
         // Calculate absolute grid coordinates
         const targetX = mouseX - CONFIG.headerWidth + scrollX;
         const targetY = mouseY - CONFIG.headerHeight + scrollY;
- 
+
         let col: number = 1;
         while (this.colModel.getColX(col) + this.colModel.getColWidth(col) <= targetX && col < CONFIG.totalCols) {
             col++;
         }
-        
+
         let row: number = 1;
         while (this.rowModel.getRowY(row) + this.rowModel.getRowHeight(row) <= targetY && row < CONFIG.totalRows) {
             row++;
@@ -106,8 +109,7 @@ export class EditManager {
         this.lastMouseDownX = e.clientX;
         this.lastMouseDownY = e.clientY;
 
-        if(this.editor.style.display==='block')
-        {
+        if (this.editor.style.display === 'block') {
             this.commitEdit();
         }
 
@@ -151,7 +153,7 @@ export class EditManager {
 
     private handleMouseMove(e: MouseEvent): void {
         const { row, col, mouseX, mouseY } = this.getCellFromEvent(e);
- 
+
         if (this.resizingCol !== -1 || this.resizingRow !== -1 || this.isSelecting) {
             if (Math.abs(e.clientX - this.lastMouseDownX) > CONFIG.dragThreshold || Math.abs(e.clientY - this.lastMouseDownY) > CONFIG.dragThreshold) {
                 this.lastDragTime = Date.now();
@@ -177,6 +179,7 @@ export class EditManager {
             const safeRow = Math.max(1, Math.min(CONFIG.totalRows, row));
             const safeCol = Math.max(1, Math.min(CONFIG.totalCols, col));
             this.selection.setEnd(safeRow, safeCol);
+
             this.renderCallback();
             this.summaryCalculator.updateStats();
             return;
@@ -186,10 +189,10 @@ export class EditManager {
         let cursor: string = 'cell';
         const scrollX = this.container.scrollLeft;
         const scrollY = this.container.scrollTop;
-        
+
         const rightEdge = CONFIG.headerWidth + this.colModel.getColX(col) + this.colModel.getColWidth(col) - scrollX;
         const bottomEdge = CONFIG.headerHeight + this.rowModel.getRowY(row) + this.rowModel.getRowHeight(row) - scrollY;
- 
+
         // If hovering over Top Header and near the right edge of a column
         if (mouseY <= CONFIG.headerHeight && Math.abs(mouseX - rightEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'col-resize';
@@ -228,27 +231,93 @@ export class EditManager {
         this.resizingRow = -1;
     }
 
-    private handleDoubleClick(e:MouseEvent):void
-    {
-        if(e.button!==0)
-        {
+    private handleDoubleClick(e: MouseEvent): void {
+        if (e.button !== 0) {
             return;
         }
-        if(Date.now() - this.lastDragTime < CONFIG.doubleClickDragTimeout)
-        {
+        if (Date.now() - this.lastDragTime < CONFIG.doubleClickDragTimeout) {
             return;
         }
-        const {row,col,mouseX,mouseY}=this.getCellFromEvent(e);
+        const { row, col, mouseX, mouseY } = this.getCellFromEvent(e);
 
-        if(mouseX<=CONFIG.headerWidth||mouseY<=CONFIG.headerHeight)
-        {
+        if (mouseX <= CONFIG.headerWidth || mouseY <= CONFIG.headerHeight) {
             return;
         }
-        this.openEditor(row,col);
+        this.openEditor(row, col);
     }
 
-    private openEditor(row:number,col:number)
+    private handleKeyDown(e: KeyboardEvent): void {
+        //if editing ,then use it normally
+        if (this.editor.style.display === 'block') {
+            return;
+        }
+        const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+
+        if (!isArrowKey) { return; }
+
+        e.preventDefault();
+
+        let row = this.selection.hasSelection() ? this.selection.startRow : 1;
+        let col = this.selection.hasSelection() ? this.selection.startCol : 1;
+
+        if (e.key === 'ArrowUp') 
+        {
+            row--;
+        } 
+        if (e.key === 'ArrowDown')
+        {
+            row++;
+        } 
+        if (e.key === 'ArrowLeft')
+        {
+            col--;
+        }
+        if (e.key === 'ArrowRight')
+        {
+            col++;
+        } 
+        row = Math.max(1, Math.min(CONFIG.totalRows, row));
+        col = Math.max(1, Math.min(CONFIG.totalCols, col));
+
+        this.selection.setStart(row, col);
+
+        this.scrollToCell(row, col);
+        this.renderCallback();
+        this.summaryCalculator.updateStats();
+    }
+
+    private scrollToCell(row: number, col: number): void 
     {
+        this.viewPortManager.getVisibleRange(this.container.scrollLeft,this.container.scrollTop,this.rowModel.getRowHeight(row),this.colModel.getColWidth(col));
+        // const scrollX=this.container.scrollLeft;
+        // const scrollY=this.container.scrollTop;
+        // const viewWidth=this.container.clientWidth;
+        // const viewHeight=this.container.clientHeight;
+
+        // const cellLeft=CONFIG.headerWidth+this.colModel.getColX(col);
+        // const cellRight=cellLeft+this.colModel.getColWidth(col);4
+
+        // if(cellLeft<scrollX+CONFIG.headerWidth)
+        // {
+        //     this.container.scrollLeft=cellLeft-CONFIG.headerWidth;
+        // }
+        // else if(cellRight>scrollX+viewWidth)
+        // {
+        //     this.container.scrollLeft=cellRight-viewWidth;
+        // }
+
+        // const cellTop=CONFIG.headerHeight+this.rowModel.getRowY(row);
+        // const cellBottom=cellTop+this.rowModel.getRowHeight(row);
+        // if(cellTop<scrollY+CONFIG.headerHeight)
+        // {
+        //     this.container.scrollTop=cellTop-CONFIG.headerHeight;
+        // }
+        // else if(cellBottom>scrollY+viewHeight)
+        // {
+        //     this.container.scrollTop=cellBottom-viewHeight;
+        // }
+    }
+    private openEditor(row: number, col: number) {
         const scrollX = this.container.scrollLeft;
         const scrollY = this.container.scrollTop;
 
@@ -265,7 +334,7 @@ export class EditManager {
 
         const cell = this.dataStore.getValue(row, col);
         const currentVal = cell ? cell.value : '';
-        this.editor.value=currentVal.toString();
+        this.editor.value = currentVal.toString();
         this.editor.focus();
     }
 
@@ -287,8 +356,8 @@ export class EditManager {
         }
 
         this.editor.style.display = 'none';
-        this.editor.blur(); 
-        
+        this.editor.blur();
+
         this.renderCallback();
         this.summaryCalculator.updateStats();
     }
