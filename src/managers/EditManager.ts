@@ -9,16 +9,20 @@ import { EditCellCommand } from '../commands/EditCellCommand.js';
 import { ResizeColumnCommand } from '../commands/ResizeColumnCommand.js';
 import { ResizeRowCommand } from '../commands/ResizeRowCommand.js';
 import type { ViewportManager } from './ViewportManager.js';
+import type { GridContext } from '../handlers/PointerHandler.js';
+import { PointerHandler} from '../handlers/PointerHandler.js';
+import { CellSelectionHandler } from '../handlers/CellSelectionHandler.js';
+import { ColumnSelectionHandler } from '../handlers/ColumnSelectionHandler.js';
+import { ResizingHandler } from '../handlers/ResizingHandler.js';
+import { RowSelectionHandler } from '../handlers/RowSelectionHandler.js';
 
 export class EditManager {
-    private isSelecting: boolean = false;
-    private resizingCol: number = -1;
-    private resizingRow: number = -1;
-    private startpointerPos: number = 0;
-    private startSize: number = 0;
     private lastpointerDownX: number = 0;
     private lastpointerDownY: number = 0;
     private lastDragTime: number = 0;
+
+    private activeHandler: PointerHandler | null = null;
+    private handlers: PointerHandler[] = [];
 
     private editor!: HTMLInputElement;
     private boundBlur: (e: Event) => void;
@@ -63,6 +67,7 @@ export class EditManager {
         this.boundWindowKeyDown = (e: KeyboardEvent) => this.handleKeyDown(e);
 
         this.createEditor();
+        this.initializeHandlers();
     }
 
     private createEditor(): void {
@@ -84,6 +89,25 @@ export class EditManager {
         this.container.addEventListener('scroll', this.boundScroll)
     }
 
+    private initializeHandlers():void
+    {
+        const context: GridContext = {
+            rowModel: this.rowModel,
+            colModel: this.colModel,
+            selection: this.selection,
+            summaryCalculator: this.summaryCalculator,
+            cmdManager: this.cmdManager,
+            renderCallback: this.renderCallback,
+            updateScrollbarCallback: this.updateScrollbarCallback
+        };
+
+        this.handlers = [
+            new ResizingHandler(context),
+            new ColumnSelectionHandler(context),
+            new RowSelectionHandler(context),
+            new CellSelectionHandler(context)
+        ];
+    }
     public bindEvents(): void {
         this.canvas.addEventListener('pointerdown', this.boundpointerDown);
         this.canvas.addEventListener('pointermove', this.boundpointerMove);
@@ -143,97 +167,45 @@ export class EditManager {
             this.commitEdit();
         }
 
-        const { row, col, pointerX, pointerY } = this.getCellFromEvent(e);
-
-        // Start Resizing
-        if (this.canvas.style.cursor === 'col-resize') {
-            this.resizingCol = col;
-            this.startSize = this.colModel.getColWidth(col);
-            this.startpointerPos = e.clientX;
-            return;
-        }
-        if (this.canvas.style.cursor === 'row-resize') {
-            this.resizingRow = row;
-            this.startSize = this.rowModel.getRowHeight(row);
-            this.startpointerPos = e.clientY;
-            return;
-        }
-
-        //  Row / Column Selection
-        if (pointerY <= CONFIG.headerHeight && pointerX > CONFIG.headerWidth) {
-            this.selection.selectWholeColumn(col);
-            this.isSelecting = true;
-            this.renderCallback();
-            this.summaryCalculator.updateStats();
-            return;
-        }
-        if (pointerX <= CONFIG.headerWidth && pointerY > CONFIG.headerHeight) {
-            this.selection.selectWholeRow(row);
-            this.isSelecting = true;
-            this.renderCallback();
-            this.summaryCalculator.updateStats();
-            return;
-        }
-
-        // Normal Cell Selection
-        if (pointerX > CONFIG.headerWidth && pointerY > CONFIG.headerHeight) {
-            this.selection.setStart(row, col);
-            this.isSelecting = true;
-            this.renderCallback();
-            this.summaryCalculator.updateStats();
+        const data = this.getCellFromEvent(e);
+        const currentCursor = this.canvas.style.cursor;
+ 
+        // Iterate through handlers. The first one to return `true` becomes active.
+        for (const handler of this.handlers) {
+            if (handler.onPointerDown(e, data, currentCursor)) {
+                this.activeHandler = handler;
+                break;
+            }
         }
     }
 
     private handlepointerMove(e: PointerEvent): void {
-        const { row, col, pointerX, pointerY } = this.getCellFromEvent(e);
+        const data = this.getCellFromEvent(e);
 
-        if (this.resizingCol !== -1 || this.resizingRow !== -1 || this.isSelecting) {
+         // Track drag time for double click logic
+        if (this.activeHandler) {
             if (Math.abs(e.clientX - this.lastpointerDownX) > CONFIG.dragThreshold || Math.abs(e.clientY - this.lastpointerDownY) > CONFIG.dragThreshold) {
                 this.lastDragTime = Date.now();
             }
+            // Delegate the move event to the active handler
+            this.activeHandler.onPointerMove(e, data);
+            return; 
         }
 
-        // Drag to Resize
-        if (this.resizingCol !== -1) {
-            const diff = e.clientX - this.startpointerPos;
-            this.colModel.setColWidth(this.resizingCol, this.startSize + diff);
-            this.renderCallback();
-            return;
-        }
-        if (this.resizingRow !== -1) {
-            const diff = e.clientY - this.startpointerPos;
-            this.rowModel.setRowHeight(this.resizingRow, this.startSize + diff);
-            this.renderCallback();
-            return;
-        }
-        // Drag to Select
-        if (this.isSelecting) {
-            // Prevent going out of bounds while dragging
-            const safeRow = Math.max(1, Math.min(CONFIG.totalRows, row));
-            const safeCol = Math.max(1, Math.min(CONFIG.totalCols, col));
-            this.selection.setEnd(safeRow, safeCol);
-
-            this.renderCallback();
-            this.summaryCalculator.updateStats();
-            return;
-        }
-
-        // Hover to change cursor (Boundary Detection)
+         // Hover logic (Determine boundary cursors when NO handler is active)
         let cursor: string = 'cell';
         const scrollX = this.container.scrollLeft;
         const scrollY = this.container.scrollTop;
+ 
+        const rightEdge = CONFIG.headerWidth + this.colModel.getColX(data.col) + this.colModel.getColWidth(data.col) - scrollX;
+        const bottomEdge = CONFIG.headerHeight + this.rowModel.getRowY(data.row) + this.rowModel.getRowHeight(data.row) - scrollY;
 
-        const rightEdge = CONFIG.headerWidth + this.colModel.getColX(col) + this.colModel.getColWidth(col) - scrollX;
-        const bottomEdge = CONFIG.headerHeight + this.rowModel.getRowY(row) + this.rowModel.getRowHeight(row) - scrollY;
-
-        // If hovering over Top Header and near the right edge of a column
-        if (pointerY <= CONFIG.headerHeight && Math.abs(pointerX - rightEdge) < CONFIG.resizeHoverMargin) {
+        if (data.pointerY <= CONFIG.headerHeight && Math.abs(data.pointerX - rightEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'col-resize';
-        }
-        // If hovering over Left Header and near the bottom edge of a row
-        else if (pointerX <= CONFIG.headerWidth && Math.abs(pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
+        } else if (data.pointerX <= CONFIG.headerWidth && Math.abs(data.pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'row-resize';
         }
+        
         this.canvas.style.cursor = cursor;
     }
 
@@ -241,31 +213,11 @@ export class EditManager {
         if (this.canvas.hasPointerCapture(e.pointerId)) {
             this.canvas.releasePointerCapture(e.pointerId);
         }
-
-        this.isSelecting = false;
-
-        // If we were resizing a column, record the command
-        if (this.resizingCol !== -1) {
-            const finalWidth = this.colModel.getColWidth(this.resizingCol);
-            if (finalWidth !== this.startSize) {
-                const cmd = new ResizeColumnCommand(this.colModel, this.resizingCol, this.startSize, finalWidth);
-                this.cmdManager.executeCommand(cmd);
-            }
-            this.updateScrollbarCallback();
+ 
+        if (this.activeHandler) {
+            this.activeHandler.onPointerUp(e);
+            this.activeHandler = null; // Reset for the next click
         }
-
-        // If we were resizing a row, record the command
-        if (this.resizingRow !== -1) {
-            const finalHeight = this.rowModel.getRowHeight(this.resizingRow);
-            if (finalHeight !== this.startSize) {
-                const cmd = new ResizeRowCommand(this.rowModel, this.resizingRow, this.startSize, finalHeight);
-                this.cmdManager.executeCommand(cmd);
-            }
-            this.updateScrollbarCallback();
-        }
-
-        this.resizingCol = -1;
-        this.resizingRow = -1;
     }
 
     private handleDoubleClick(e: MouseEvent): void {
