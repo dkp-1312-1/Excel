@@ -17,7 +17,7 @@ export class Grid {
     private statsEl: HTMLElement;
 
     private cmdManager: CommandManager;
-    
+
     private dataStore: GridDataStore;
     private renderer: GridRenderer;
     private selection: SelectionManager;
@@ -28,6 +28,10 @@ export class Grid {
     private editManager: EditManager;
 
     private isRenderPending: boolean = false;
+
+    private boundResize: () => void;
+    private boundScroll: () => void;
+    private boundKeyDown: (e: KeyboardEvent) => void;
 
     constructor() {
         this.container = document.getElementById('grid-container') as HTMLElement;
@@ -44,70 +48,84 @@ export class Grid {
         this.viewportManager = new ViewportManager(this.rowModel, this.colModel);
         this.summaryCalculator = new SummaryCalculator(this.statsEl, this.dataStore, this.selection);
         this.editManager = new EditManager(
-            this.container, this.canvas, this.rowModel, this.colModel, this.selection, this.summaryCalculator, this.dataStore, this.cmdManager, this.viewportManager,() => this.render(), () => this.updateScrollbarSize()
+            this.container, this.canvas, this.rowModel, this.colModel, this.selection, this.summaryCalculator, this.dataStore, this.cmdManager, this.viewportManager, () => this.render(), () => this.updateScrollbarSize()
         );
-        
+        this.boundResize = () => this.resize();
+        this.boundScroll = () => this.render();
+        this.boundKeyDown = (e: KeyboardEvent) => this.handleGlobalKeyDown(e);
+
         this.init();
     }
- 
+
     private async init(): Promise<void> {
         const dataLoader = new JsonDataLoader();
         await dataLoader.loadJSON('data.json', this.dataStore);
         this.updateScrollbarSize();
-        
+
         this.editManager.bindEvents();
-        window.addEventListener('resize', () => this.resize());
-        this.container.addEventListener('scroll', () => this.render());
-        
-        window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key.toLowerCase() === 'z') {
-                e.preventDefault();
-                if (this.cmdManager.undo()) {
-                    this.render();
-                    this.updateScrollbarSize();
-                    this.summaryCalculator.updateStats();
-                }
-            }
-            if (e.ctrlKey && e.key.toLowerCase() === 'y') {
-                e.preventDefault();
-                if (this.cmdManager.redo()) {
-                    this.render();
-                    this.updateScrollbarSize();
-                    this.summaryCalculator.updateStats();
-                }
-            }
-        });
+        window.addEventListener('resize', this.boundResize);
+        this.container.addEventListener('scroll', this.boundScroll);
+
+        window.addEventListener('keydown', this.boundKeyDown);
 
         this.resize();
+    }
+
+    private handleGlobalKeyDown(e: KeyboardEvent): void {
+        if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            if (this.cmdManager.undo()) {
+                this.render();
+                this.updateScrollbarSize();
+                this.summaryCalculator.updateStats();
+            }
+        }
+        if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+            e.preventDefault();
+            if (this.cmdManager.redo()) {
+                this.render();
+                this.updateScrollbarSize();
+                this.summaryCalculator.updateStats();
+            }
+        }
+    }
+
+    public destroy(): void {
+        window.removeEventListener('resize', this.boundResize);
+        this.container.removeEventListener('scroll', this.boundScroll);
+        window.removeEventListener('keydown', this.boundKeyDown);
+
+        if (typeof this.editManager.unbindEvents === 'function') {
+            this.editManager.unbindEvents();
+        }
     }
 
     private updateScrollbarSize(): void {
         this.scrollContent.style.width = `${CONFIG.headerWidth + this.colModel.getColX(CONFIG.totalCols) + this.colModel.getColWidth(CONFIG.totalCols)}px`;
         this.scrollContent.style.height = `${CONFIG.headerHeight + this.rowModel.getRowY(CONFIG.totalRows) + this.rowModel.getRowHeight(CONFIG.totalRows)}px`;
     }
- 
+
     private resize(): void {
         this.canvas.width = this.container.clientWidth;
         this.canvas.height = this.container.clientHeight;
         this.render();
     }
- 
+
     private render(): void {
 
-        if(this.isRenderPending) return;
+        if (this.isRenderPending) return;
 
         //make flag true when executing render
-        this.isRenderPending=true;
+        this.isRenderPending = true;
 
-        requestAnimationFrame(()=>{
+        requestAnimationFrame(() => {
             this.executeRender();
             //make flag false after executing render
-            this.isRenderPending=false;
+            this.isRenderPending = false;
         })
-        
+
     }
-    private executeRender(): void
-    {
+    private executeRender(): void {
         this.renderer.drawSelection(
             this.container.scrollLeft,
             this.container.scrollTop,

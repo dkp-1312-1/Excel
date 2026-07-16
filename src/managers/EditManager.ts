@@ -21,6 +21,14 @@ export class EditManager {
     private lastDragTime: number = 0;
 
     private editor!: HTMLInputElement;
+    private boundBlur: (e: Event) => void;
+    private boundEditorKeyDown: (e: KeyboardEvent) => void;
+    private boundScroll: (e: Event) => void;
+    private boundMouseDown: (e: MouseEvent) => void;
+    private boundMouseMove: (e: MouseEvent) => void;
+    private boundMouseUp: (e: MouseEvent) => void;
+    private boundDblClick: (e: MouseEvent) => void;
+    private boundWindowKeyDown: (e: KeyboardEvent) => void;
     constructor(
         private container: HTMLElement,
         private canvas: HTMLCanvasElement,
@@ -30,10 +38,27 @@ export class EditManager {
         private summaryCalculator: SummaryCalculator,
         private dataStore: GridDataStore,
         private cmdManager: CommandManager,
-        private viewPortManager:ViewportManager,
+        private viewPortManager: ViewportManager,
         private renderCallback: () => void,
         private updateScrollbarCallback: () => void
     ) {
+        this.boundBlur = () => this.commitEdit();
+        this.boundEditorKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                this.editor.style.display = 'none';
+                this.editor.blur();
+            }
+        };
+        this.boundScroll = () => {
+            if (this.editor.style.display === 'block') {
+                this.commitEdit();
+            }
+        };
+        this.boundMouseDown = (e: MouseEvent) => this.handleMouseDown(e);
+        this.boundMouseMove = (e: MouseEvent) => this.handleMouseMove(e);
+        this.boundMouseUp = () => this.handleMouseUp();
+        this.boundDblClick = (e: MouseEvent) => this.handleDoubleClick(e);
+        this.boundWindowKeyDown = (e: KeyboardEvent) => this.handleKeyDown(e);
 
         this.createEditor();
     }
@@ -51,36 +76,33 @@ export class EditManager {
         this.editor.style.zIndex = CONFIG.editorZIndex;
         this.container.appendChild(this.editor);
 
-        this.editor.addEventListener('blur', () => this.commitEdit());
-        this.editor.addEventListener('keydown', (e) => {
-            if (e.key === CONFIG.commitKey) {
-                this.commitEdit();
-            } else if (e.key === 'Escape') {
-                this.editor.style.display = 'none';
-                this.editor.blur();
-            }
-        });
+        this.editor.addEventListener('blur', this.boundBlur);
+        this.editor.addEventListener('keydown', this.boundEditorKeyDown);
 
-        this.container.addEventListener('scroll', () => {
-            if (this.editor.style.display === 'block') {
-                this.commitEdit();
-            }
-        })
+        this.container.addEventListener('scroll', this.boundScroll)
     }
 
     public bindEvents(): void {
-        this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-        this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        window.addEventListener('mouseup', () => this.handleMouseUp());
+        this.canvas.addEventListener('mousedown',this.boundMouseDown);
+        this.canvas.addEventListener('mousemove', this.boundMouseMove);
+        window.addEventListener('mouseup', this.boundMouseUp);
 
-        this.canvas.addEventListener('dblclick', (e) => {
-            this.handleDoubleClick(e);
-        });
+        this.canvas.addEventListener('dblclick', this.boundDblClick);
 
-        window.addEventListener('keydown', (e) => {
-            this.handleKeyDown(e);
-        });
+        window.addEventListener('keydown', this.boundWindowKeyDown);
     }
+
+    public unbindEvents(): void {
+    this.editor.removeEventListener('blur', this.boundBlur);
+    this.editor.removeEventListener('keydown', this.boundEditorKeyDown);
+    this.container.removeEventListener('scroll', this.boundScroll);
+ 
+    this.canvas.removeEventListener('mousedown', this.boundMouseDown);
+    this.canvas.removeEventListener('mousemove', this.boundMouseMove);
+    window.removeEventListener('mouseup', this.boundMouseUp);
+    this.canvas.removeEventListener('dblclick', this.boundDblClick);
+    window.removeEventListener('keydown', this.boundWindowKeyDown);
+  }
 
     private getCellFromEvent(e: MouseEvent) {
         const rect = this.canvas.getBoundingClientRect();
@@ -137,12 +159,14 @@ export class EditManager {
             this.selection.selectWholeColumn(col);
             this.isSelecting = true;
             this.renderCallback();
+            this.summaryCalculator.updateStats();
             return;
         }
         if (mouseX <= CONFIG.headerWidth && mouseY > CONFIG.headerHeight) {
             this.selection.selectWholeRow(row);
             this.isSelecting = true;
             this.renderCallback();
+            this.summaryCalculator.updateStats();
             return;
         }
 
@@ -151,7 +175,9 @@ export class EditManager {
             this.selection.setStart(row, col);
             this.isSelecting = true;
             this.renderCallback();
+            this.summaryCalculator.updateStats();
         }
+
     }
 
     private handleMouseMove(e: MouseEvent): void {
@@ -252,10 +278,18 @@ export class EditManager {
     private handleKeyDown(e: KeyboardEvent): void {
         //if editing ,then use it normally
         if (this.editor.style.display === 'block') {
+            if (e.key === 'Enter' || e.key === CONFIG.commitKey) {
+                e.preventDefault();
+                this.commitEdit();
+
+                // Hide the editor / return it to normal state
+                this.editor.style.display = 'none';
+            }
             return;
         }
         if (e.key === 'Enter' || e.key === CONFIG.commitKey) {
             e.preventDefault();
+
             if (this.selection.hasSelection()) {
                 this.openEditor(this.selection.startRow, this.selection.startCol);
             }
@@ -271,25 +305,21 @@ export class EditManager {
         let row = this.selection.hasSelection() ? this.selection.startRow : 1;
         let col = this.selection.hasSelection() ? this.selection.startCol : 1;
 
-        if (e.key === 'ArrowUp') 
-        {
+        if (e.key === 'ArrowUp') {
             row--;
-        } 
-        if (e.key === 'ArrowDown')
-        {
+        }
+        if (e.key === 'ArrowDown') {
             row++;
-        } 
-        if (e.key === 'ArrowLeft')
-        {
+        }
+        if (e.key === 'ArrowLeft') {
             col--;
         }
-        if (e.key === 'ArrowRight')
-        {
+        if (e.key === 'ArrowRight') {
             col++;
-        } 
+        }
         row = Math.max(1, Math.min(CONFIG.totalRows, row));
         col = Math.max(1, Math.min(CONFIG.totalCols, col));
-
+        this.commitEdit();
         this.selection.setStart(row, col);
 
         this.scrollToCell(row, col);
@@ -297,36 +327,31 @@ export class EditManager {
         this.summaryCalculator.updateStats();
     }
 
-    private scrollToCell(row: number, col: number): void 
-    {
-        this.viewPortManager.getVisibleRange(this.container.scrollLeft,this.container.scrollTop,this.rowModel.getRowHeight(row),this.colModel.getColWidth(col));
-        // const scrollX=this.container.scrollLeft;
-        // const scrollY=this.container.scrollTop;
-        // const viewWidth=this.container.clientWidth;
-        // const viewHeight=this.container.clientHeight;
+    private scrollToCell(row: number, col: number): void {
+        // this.viewPortManager.getVisibleRange(this.container.scrollLeft,this.container.scrollTop,this.rowModel.getRowHeight(row),this.colModel.getColWidth(col));
+        const scrollX = this.container.scrollLeft;
+        const scrollY = this.container.scrollTop;
+        const viewWidth = this.container.clientWidth;
+        const viewHeight = this.container.clientHeight;
 
-        // const cellLeft=CONFIG.headerWidth+this.colModel.getColX(col);
-        // const cellRight=cellLeft+this.colModel.getColWidth(col);4
+        const cellLeft = CONFIG.headerWidth + this.colModel.getColX(col);
+        const cellRight = cellLeft + this.colModel.getColWidth(col); 4
 
-        // if(cellLeft<scrollX+CONFIG.headerWidth)
-        // {
-        //     this.container.scrollLeft=cellLeft-CONFIG.headerWidth;
-        // }
-        // else if(cellRight>scrollX+viewWidth)
-        // {
-        //     this.container.scrollLeft=cellRight-viewWidth;
-        // }
+        if (cellLeft < scrollX + CONFIG.headerWidth) {
+            this.container.scrollLeft = cellLeft - CONFIG.headerWidth;
+        }
+        else if (cellRight > scrollX + viewWidth) {
+            this.container.scrollLeft = cellRight - viewWidth;
+        }
 
-        // const cellTop=CONFIG.headerHeight+this.rowModel.getRowY(row);
-        // const cellBottom=cellTop+this.rowModel.getRowHeight(row);
-        // if(cellTop<scrollY+CONFIG.headerHeight)
-        // {
-        //     this.container.scrollTop=cellTop-CONFIG.headerHeight;
-        // }
-        // else if(cellBottom>scrollY+viewHeight)
-        // {
-        //     this.container.scrollTop=cellBottom-viewHeight;
-        // }
+        const cellTop = CONFIG.headerHeight + this.rowModel.getRowY(row);
+        const cellBottom = cellTop + this.rowModel.getRowHeight(row);
+        if (cellTop < scrollY + CONFIG.headerHeight) {
+            this.container.scrollTop = cellTop - CONFIG.headerHeight;
+        }
+        else if (cellBottom > scrollY + viewHeight) {
+            this.container.scrollTop = cellBottom - viewHeight;
+        }
     }
     private openEditor(row: number, col: number) {
         const scrollX = this.container.scrollLeft;
@@ -336,7 +361,6 @@ export class EditManager {
         const y = CONFIG.headerHeight + this.rowModel.getRowY(row);
         const w = this.colModel.getColWidth(col);
         const h = this.rowModel.getRowHeight(row);
-        console.log(x, y, scrollX, scrollY);
         this.editor.style.left = `${x}px`;
         this.editor.style.top = `${y}px`;
         this.editor.style.width = `${w}px`;

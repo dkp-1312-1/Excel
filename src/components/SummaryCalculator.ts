@@ -24,9 +24,9 @@ export class SummaryCalculator {
             for (let c: number = range.cMin; c <= range.cMax; c++) {
                 const cell = this.dataStore.getValue(r, c);
                 if (cell !== null && cell.value !== '') {
-                    count++;
-                    const num = parseFloat(cell.value.toString());
-                    if (!isNaN(num)) {
+                    if (Number(cell.value.toString())) {
+                        const num=parseFloat(cell.value.toString());
+                        count++;
                         hasNum = true;
                         sum += num;
                         if (num < min) min = num;

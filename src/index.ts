@@ -1,5 +1,9 @@
 import { Grid } from './components/Grid.js';
- 
-document.addEventListener('DOMContentLoaded', () => {
-    new Grid();
-});
+
+const initGrid = () => {
+  new Grid();
+  
+  document.removeEventListener('DOMContentLoaded', initGrid);
+};
+
+document.addEventListener('DOMContentLoaded', initGrid);
