@@ -55,6 +55,9 @@ export class EditManager {
         this.editor.addEventListener('keydown', (e) => {
             if (e.key === CONFIG.commitKey) {
                 this.commitEdit();
+            } else if (e.key === 'Escape') {
+                this.editor.style.display = 'none';
+                this.editor.blur();
             }
         });
 
@@ -251,6 +254,14 @@ export class EditManager {
         if (this.editor.style.display === 'block') {
             return;
         }
+        if (e.key === 'Enter' || e.key === CONFIG.commitKey) {
+            e.preventDefault();
+            if (this.selection.hasSelection()) {
+                this.openEditor(this.selection.startRow, this.selection.startCol);
+            }
+            return;
+        }
+
         const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
 
         if (!isArrowKey) { return; }
