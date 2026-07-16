@@ -14,19 +14,20 @@ export class EditManager {
     private isSelecting: boolean = false;
     private resizingCol: number = -1;
     private resizingRow: number = -1;
-    private startMousePos: number = 0;
+    private startpointerPos: number = 0;
     private startSize: number = 0;
-    private lastMouseDownX: number = 0;
-    private lastMouseDownY: number = 0;
+    private lastpointerDownX: number = 0;
+    private lastpointerDownY: number = 0;
     private lastDragTime: number = 0;
 
     private editor!: HTMLInputElement;
     private boundBlur: (e: Event) => void;
     private boundEditorKeyDown: (e: KeyboardEvent) => void;
     private boundScroll: (e: Event) => void;
-    private boundMouseDown: (e: MouseEvent) => void;
-    private boundMouseMove: (e: MouseEvent) => void;
-    private boundMouseUp: (e: MouseEvent) => void;
+    private boundpointerDown: (e: PointerEvent) => void;
+    private boundpointerMove: (e: PointerEvent) => void;
+    private boundpointerUp: (e: PointerEvent) => void;
+    private boundpointerCancel: (e: PointerEvent) => void;
     private boundDblClick: (e: MouseEvent) => void;
     private boundWindowKeyDown: (e: KeyboardEvent) => void;
     constructor(
@@ -54,9 +55,10 @@ export class EditManager {
                 this.commitEdit();
             }
         };
-        this.boundMouseDown = (e: MouseEvent) => this.handleMouseDown(e);
-        this.boundMouseMove = (e: MouseEvent) => this.handleMouseMove(e);
-        this.boundMouseUp = () => this.handleMouseUp();
+        this.boundpointerDown = (e: PointerEvent) => this.handlepointerDown(e);
+        this.boundpointerMove = (e: PointerEvent) => this.handlepointerMove(e);
+        this.boundpointerUp = (e: PointerEvent) => this.handlepointerUp(e);
+        this.boundpointerCancel = (e: PointerEvent) => this.handlepointerUp(e);
         this.boundDblClick = (e: MouseEvent) => this.handleDoubleClick(e);
         this.boundWindowKeyDown = (e: KeyboardEvent) => this.handleKeyDown(e);
 
@@ -83,9 +85,10 @@ export class EditManager {
     }
 
     public bindEvents(): void {
-        this.canvas.addEventListener('mousedown',this.boundMouseDown);
-        this.canvas.addEventListener('mousemove', this.boundMouseMove);
-        window.addEventListener('mouseup', this.boundMouseUp);
+        this.canvas.addEventListener('pointerdown', this.boundpointerDown);
+        this.canvas.addEventListener('pointermove', this.boundpointerMove);
+        window.addEventListener('pointerup', this.boundpointerUp);
+        this.canvas.addEventListener('pointercancel', this.boundpointerCancel);
 
         this.canvas.addEventListener('dblclick', this.boundDblClick);
 
@@ -93,28 +96,28 @@ export class EditManager {
     }
 
     public unbindEvents(): void {
-    this.editor.removeEventListener('blur', this.boundBlur);
-    this.editor.removeEventListener('keydown', this.boundEditorKeyDown);
-    this.container.removeEventListener('scroll', this.boundScroll);
- 
-    this.canvas.removeEventListener('mousedown', this.boundMouseDown);
-    this.canvas.removeEventListener('mousemove', this.boundMouseMove);
-    window.removeEventListener('mouseup', this.boundMouseUp);
-    this.canvas.removeEventListener('dblclick', this.boundDblClick);
-    window.removeEventListener('keydown', this.boundWindowKeyDown);
-  }
+        this.editor.removeEventListener('blur', this.boundBlur);
+        this.editor.removeEventListener('keydown', this.boundEditorKeyDown);
+        this.container.removeEventListener('scroll', this.boundScroll);
+
+        this.canvas.removeEventListener('pointerdown', this.boundpointerDown);
+        this.canvas.removeEventListener('pointermove', this.boundpointerMove);
+        window.removeEventListener('pointerup', this.boundpointerUp);
+        this.canvas.removeEventListener('dblclick', this.boundDblClick);
+        window.removeEventListener('keydown', this.boundWindowKeyDown);
+    }
 
     private getCellFromEvent(e: MouseEvent) {
         const rect = this.canvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+        const pointerX = e.clientX - rect.left;
+        const pointerY = e.clientY - rect.top;
 
         const scrollX = this.container.scrollLeft;
         const scrollY = this.container.scrollTop;
 
         // Calculate absolute grid coordinates
-        const targetX = mouseX - CONFIG.headerWidth + scrollX;
-        const targetY = mouseY - CONFIG.headerHeight + scrollY;
+        const targetX = pointerX - CONFIG.headerWidth + scrollX;
+        const targetY = pointerY - CONFIG.headerHeight + scrollY;
 
         let col: number = 1;
         while (this.colModel.getColX(col) + this.colModel.getColWidth(col) <= targetX && col < CONFIG.totalCols) {
@@ -125,44 +128,46 @@ export class EditManager {
         while (this.rowModel.getRowY(row) + this.rowModel.getRowHeight(row) <= targetY && row < CONFIG.totalRows) {
             row++;
         }
-        return { row, col, mouseX, mouseY };
+        return { row, col, pointerX, pointerY };
     }
 
-    private handleMouseDown(e: MouseEvent): void {
+    private handlepointerDown(e: PointerEvent): void {
         if (e.button !== 0) return;
 
-        this.lastMouseDownX = e.clientX;
-        this.lastMouseDownY = e.clientY;
+        this.canvas.setPointerCapture(e.pointerId);
+
+        this.lastpointerDownX = e.clientX;
+        this.lastpointerDownY = e.clientY;
 
         if (this.editor.style.display === 'block') {
             this.commitEdit();
         }
 
-        const { row, col, mouseX, mouseY } = this.getCellFromEvent(e);
+        const { row, col, pointerX, pointerY } = this.getCellFromEvent(e);
 
         // Start Resizing
         if (this.canvas.style.cursor === 'col-resize') {
             this.resizingCol = col;
             this.startSize = this.colModel.getColWidth(col);
-            this.startMousePos = e.clientX;
+            this.startpointerPos = e.clientX;
             return;
         }
         if (this.canvas.style.cursor === 'row-resize') {
             this.resizingRow = row;
             this.startSize = this.rowModel.getRowHeight(row);
-            this.startMousePos = e.clientY;
+            this.startpointerPos = e.clientY;
             return;
         }
 
         //  Row / Column Selection
-        if (mouseY <= CONFIG.headerHeight && mouseX > CONFIG.headerWidth) {
+        if (pointerY <= CONFIG.headerHeight && pointerX > CONFIG.headerWidth) {
             this.selection.selectWholeColumn(col);
             this.isSelecting = true;
             this.renderCallback();
             this.summaryCalculator.updateStats();
             return;
         }
-        if (mouseX <= CONFIG.headerWidth && mouseY > CONFIG.headerHeight) {
+        if (pointerX <= CONFIG.headerWidth && pointerY > CONFIG.headerHeight) {
             this.selection.selectWholeRow(row);
             this.isSelecting = true;
             this.renderCallback();
@@ -171,33 +176,32 @@ export class EditManager {
         }
 
         // Normal Cell Selection
-        if (mouseX > CONFIG.headerWidth && mouseY > CONFIG.headerHeight) {
+        if (pointerX > CONFIG.headerWidth && pointerY > CONFIG.headerHeight) {
             this.selection.setStart(row, col);
             this.isSelecting = true;
             this.renderCallback();
             this.summaryCalculator.updateStats();
         }
-
     }
 
-    private handleMouseMove(e: MouseEvent): void {
-        const { row, col, mouseX, mouseY } = this.getCellFromEvent(e);
+    private handlepointerMove(e: PointerEvent): void {
+        const { row, col, pointerX, pointerY } = this.getCellFromEvent(e);
 
         if (this.resizingCol !== -1 || this.resizingRow !== -1 || this.isSelecting) {
-            if (Math.abs(e.clientX - this.lastMouseDownX) > CONFIG.dragThreshold || Math.abs(e.clientY - this.lastMouseDownY) > CONFIG.dragThreshold) {
+            if (Math.abs(e.clientX - this.lastpointerDownX) > CONFIG.dragThreshold || Math.abs(e.clientY - this.lastpointerDownY) > CONFIG.dragThreshold) {
                 this.lastDragTime = Date.now();
             }
         }
 
         // Drag to Resize
         if (this.resizingCol !== -1) {
-            const diff = e.clientX - this.startMousePos;
+            const diff = e.clientX - this.startpointerPos;
             this.colModel.setColWidth(this.resizingCol, this.startSize + diff);
             this.renderCallback();
             return;
         }
         if (this.resizingRow !== -1) {
-            const diff = e.clientY - this.startMousePos;
+            const diff = e.clientY - this.startpointerPos;
             this.rowModel.setRowHeight(this.resizingRow, this.startSize + diff);
             this.renderCallback();
             return;
@@ -223,17 +227,21 @@ export class EditManager {
         const bottomEdge = CONFIG.headerHeight + this.rowModel.getRowY(row) + this.rowModel.getRowHeight(row) - scrollY;
 
         // If hovering over Top Header and near the right edge of a column
-        if (mouseY <= CONFIG.headerHeight && Math.abs(mouseX - rightEdge) < CONFIG.resizeHoverMargin) {
+        if (pointerY <= CONFIG.headerHeight && Math.abs(pointerX - rightEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'col-resize';
         }
         // If hovering over Left Header and near the bottom edge of a row
-        else if (mouseX <= CONFIG.headerWidth && Math.abs(mouseY - bottomEdge) < CONFIG.resizeHoverMargin) {
+        else if (pointerX <= CONFIG.headerWidth && Math.abs(pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'row-resize';
         }
         this.canvas.style.cursor = cursor;
     }
 
-    private handleMouseUp(): void {
+    private handlepointerUp(e: PointerEvent): void {
+        if (this.canvas.hasPointerCapture(e.pointerId)) {
+            this.canvas.releasePointerCapture(e.pointerId);
+        }
+
         this.isSelecting = false;
 
         // If we were resizing a column, record the command
@@ -267,9 +275,9 @@ export class EditManager {
         if (Date.now() - this.lastDragTime < CONFIG.doubleClickDragTimeout) {
             return;
         }
-        const { row, col, mouseX, mouseY } = this.getCellFromEvent(e);
+        const { row, col, pointerX, pointerY } = this.getCellFromEvent(e);
 
-        if (mouseX <= CONFIG.headerWidth || mouseY <= CONFIG.headerHeight) {
+        if (pointerX <= CONFIG.headerWidth || pointerY <= CONFIG.headerHeight) {
             return;
         }
         this.openEditor(row, col);
