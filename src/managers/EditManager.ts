@@ -98,7 +98,8 @@ export class EditManager {
             summaryCalculator: this.summaryCalculator,
             cmdManager: this.cmdManager,
             renderCallback: this.renderCallback,
-            updateScrollbarCallback: this.updateScrollbarCallback
+            updateScrollbarCallback: this.updateScrollbarCallback,
+            scrollToCell: (row, col) => this.scrollToCell(row, col)
         };
 
         this.handlers = [
@@ -288,29 +289,23 @@ export class EditManager {
     }
 
     private scrollToCell(row: number, col: number): void {
-        // this.viewPortManager.getVisibleRange(this.container.scrollLeft,this.container.scrollTop,this.rowModel.getRowHeight(row),this.colModel.getColWidth(col));
         const scrollX = this.container.scrollLeft;
         const scrollY = this.container.scrollTop;
         const viewWidth = this.container.clientWidth;
         const viewHeight = this.container.clientHeight;
 
-        const cellLeft = CONFIG.headerWidth + this.colModel.getColX(col);
-        const cellRight = cellLeft + this.colModel.getColWidth(col); 4
+        const { startRow, endRow, startCol, endCol } = this.viewPortManager.getVisibleRange(scrollX, scrollY, viewWidth, viewHeight);
 
-        if (cellLeft < scrollX + CONFIG.headerWidth) {
-            this.container.scrollLeft = cellLeft - CONFIG.headerWidth;
-        }
-        else if (cellRight > scrollX + viewWidth) {
-            this.container.scrollLeft = cellRight - viewWidth;
+        if (col < startCol) {
+            this.container.scrollLeft = this.colModel.getColX(col);
+        } else if (col >= endCol) {
+            this.container.scrollLeft = CONFIG.headerWidth + this.colModel.getColX(col) + this.colModel.getColWidth(col) - viewWidth;
         }
 
-        const cellTop = CONFIG.headerHeight + this.rowModel.getRowY(row);
-        const cellBottom = cellTop + this.rowModel.getRowHeight(row);
-        if (cellTop < scrollY + CONFIG.headerHeight) {
-            this.container.scrollTop = cellTop - CONFIG.headerHeight;
-        }
-        else if (cellBottom > scrollY + viewHeight) {
-            this.container.scrollTop = cellBottom - viewHeight;
+        if (row < startRow) {
+            this.container.scrollTop = this.rowModel.getRowY(row);
+        } else if (row >= endRow) {
+            this.container.scrollTop = CONFIG.headerHeight + this.rowModel.getRowY(row) + this.rowModel.getRowHeight(row) - viewHeight;
         }
     }
     private openEditor(row: number, col: number) {

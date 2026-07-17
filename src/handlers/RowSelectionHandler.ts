@@ -15,6 +15,7 @@ export class RowSelectionHandler extends PointerHandler {
     onPointerMove(e: PointerEvent, data: CellEventData): void {
         const safeRow = Math.max(1, Math.min(CONFIG.totalRows, data.row));
         this.ctx.selection.setEnd(safeRow, CONFIG.totalCols); // Keep full row width
+        this.ctx.scrollToCell(safeRow, data.col);
         this.ctx.renderCallback();
         this.ctx.summaryCalculator.updateStats();
     }
