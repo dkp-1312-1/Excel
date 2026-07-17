@@ -11,7 +11,6 @@ export class SummaryCalculator {
         const range = this.selection.getRange();
         let count: number = 0, sum: number = 0, min: number = Infinity, max: number = -Infinity, hasNum: boolean = false;
  
-        // Only compute stats if range isn't absurdly massive to prevent UI freezing
         // (If they select 100,000 rows, we might skip full traversal or limit it)
         const cellCount = (range.rMax - range.rMin + 1) * (range.cMax - range.cMin + 1);
         

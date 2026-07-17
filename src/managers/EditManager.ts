@@ -99,7 +99,7 @@ export class EditManager {
             cmdManager: this.cmdManager,
             renderCallback: this.renderCallback,
             updateScrollbarCallback: this.updateScrollbarCallback,
-            scrollToCell: (row, col) => this.scrollToCell(row, col)
+            scrollToCell: (row:number, col:number) => this.scrollToCell(row, col)
         };
 
         this.handlers = [
@@ -206,7 +206,6 @@ export class EditManager {
         } else if (data.pointerX <= CONFIG.headerWidth && Math.abs(data.pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'row-resize';
         }
-        
         this.canvas.style.cursor = cursor;
     }
 
@@ -247,7 +246,7 @@ export class EditManager {
                 this.editor.style.display = 'none';
             }
             return;
-        }
+        }   
         if (e.key === 'Enter' || e.key === CONFIG.commitKey) {
             e.preventDefault();
 
@@ -296,15 +295,15 @@ export class EditManager {
 
         const { startRow, endRow, startCol, endCol } = this.viewPortManager.getVisibleRange(scrollX, scrollY, viewWidth, viewHeight);
 
-        if (col < startCol) {
+        if (col <= startCol) {
             this.container.scrollLeft = this.colModel.getColX(col);
-        } else if (col >= endCol) {
+        } else if (col >= endCol-2) {
             this.container.scrollLeft = CONFIG.headerWidth + this.colModel.getColX(col) + this.colModel.getColWidth(col) - viewWidth;
         }
 
-        if (row < startRow) {
+        if (row <= startRow) {
             this.container.scrollTop = this.rowModel.getRowY(row);
-        } else if (row >= endRow) {
+        } else if (row >= endRow-2) {
             this.container.scrollTop = CONFIG.headerHeight + this.rowModel.getRowY(row) + this.rowModel.getRowHeight(row) - viewHeight;
         }
     }

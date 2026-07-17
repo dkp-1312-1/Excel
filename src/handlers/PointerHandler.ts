@@ -13,7 +13,7 @@ export interface GridContext
     cmdManager:CommandManager;
     renderCallback:()=>void;
     updateScrollbarCallback:()=>void;
-    scrollToCell:(row:number,col:number)=>void;
+    scrollToCell:(row:number, col:number)=>void;
 }
 export interface CellEventData 
 {

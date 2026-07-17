@@ -1,6 +1,7 @@
 import { GridDataStore } from '../models/GridDataStore.js'; 
 import { CONFIG } from '../config/Config.js'; 
 
+// Read the file back
 export class JsonDataLoader { 
   public async loadJSON(url: string, dataStore: GridDataStore): Promise<void> { 
     try { 
