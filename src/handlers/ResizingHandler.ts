@@ -8,20 +8,16 @@ export class ResizingHandler extends PointerHandler {
     private startSize: number = 0;
     private startPointerPos: number = 0;
 
-    onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): boolean {
+    onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): void {
         if (cursor === 'col-resize') {
             this.resizingCol = data.col;
             this.startSize = this.ctx.colModel.getColWidth(data.col);
             this.startPointerPos = e.clientX;
-            return true;
-        }
-        if (cursor === 'row-resize') {
+        } else if (cursor === 'row-resize') {
             this.resizingRow = data.row;
             this.startSize = this.ctx.rowModel.getRowHeight(data.row);
             this.startPointerPos = e.clientY;
-            return true;
         }
-        return false; // Not a resize event
     }
     onPointerMove(e: PointerEvent, data: CellEventData): void {
         if (this.resizingCol !== -1) {

@@ -9,20 +9,16 @@ import { EditCellCommand } from '../commands/EditCellCommand.js';
 import { ResizeColumnCommand } from '../commands/ResizeColumnCommand.js';
 import { ResizeRowCommand } from '../commands/ResizeRowCommand.js';
 import type { ViewportManager } from './ViewportManager.js';
-import type { GridContext } from '../handlers/PointerHandler.js';
-import { PointerHandler} from '../handlers/PointerHandler.js';
-import { CellSelectionHandler } from '../handlers/CellSelectionHandler.js';
-import { ColumnSelectionHandler } from '../handlers/ColumnSelectionHandler.js';
-import { ResizingHandler } from '../handlers/ResizingHandler.js';
-import { RowSelectionHandler } from '../handlers/RowSelectionHandler.js';
+import { PointerHandler } from '../handlers/PointerHandler.js';
+import { IdleHandler } from '../handlers/IdleHandler.js';
 
 export class EditManager {
     private lastpointerDownX: number = 0;
     private lastpointerDownY: number = 0;
     private lastDragTime: number = 0;
 
-    private activeHandler: PointerHandler | null = null;
-    private handlers: PointerHandler[] = [];
+    private currentState!: PointerHandler;
+    private gridContext!: GridContext;
 
     private editor!: HTMLInputElement;
     private boundBlur: (e: Event) => void;
@@ -91,7 +87,7 @@ export class EditManager {
 
     private initializeHandlers():void
     {
-        const context: GridContext = {
+        this.gridContext = {
             rowModel: this.rowModel,
             colModel: this.colModel,
             selection: this.selection,
@@ -99,15 +95,15 @@ export class EditManager {
             cmdManager: this.cmdManager,
             renderCallback: this.renderCallback,
             updateScrollbarCallback: this.updateScrollbarCallback,
-            scrollToCell: (row:number, col:number) => this.scrollToCell(row, col)
+            scrollToCell: (row:number, col:number) => this.scrollToCell(row, col),
+            changeState: (newState: PointerHandler) => {
+                this.currentState = newState;
+            },
+            getScrollPosition: () => ({ scrollX: this.container.scrollLeft, scrollY: this.container.scrollTop }),
+            setCursor: (cursor: string) => { this.canvas.style.cursor = cursor; }
         };
 
-        this.handlers = [
-            new ResizingHandler(context),
-            new ColumnSelectionHandler(context),
-            new RowSelectionHandler(context),
-            new CellSelectionHandler(context)
-        ];
+        this.currentState = new IdleHandler(this.gridContext);
     }
     public bindEvents(): void {
         this.canvas.addEventListener('pointerdown', this.boundpointerDown);
@@ -171,42 +167,18 @@ export class EditManager {
         const data = this.getCellFromEvent(e);
         const currentCursor = this.canvas.style.cursor;
  
-        // Iterate through handlers. The first one to return `true` becomes active.
-        for (const handler of this.handlers) {
-            if (handler.onPointerDown(e, data, currentCursor)) {
-                this.activeHandler = handler;
-                break;
-            }
-        }
+        this.currentState.onPointerDown(e, data, currentCursor);
     }
 
     private handlepointerMove(e: PointerEvent): void {
         const data = this.getCellFromEvent(e);
 
          // Track drag time for double click logic
-        if (this.activeHandler) {
-            if (Math.abs(e.clientX - this.lastpointerDownX) > CONFIG.dragThreshold || Math.abs(e.clientY - this.lastpointerDownY) > CONFIG.dragThreshold) {
-                this.lastDragTime = Date.now();
-            }
-            // Delegate the move event to the active handler
-            this.activeHandler.onPointerMove(e, data);
-            return; 
+        if (Math.abs(e.clientX - this.lastpointerDownX) > CONFIG.dragThreshold || Math.abs(e.clientY - this.lastpointerDownY) > CONFIG.dragThreshold) {
+            this.lastDragTime = Date.now();
         }
-
-         // Hover logic (Determine boundary cursors when NO handler is active)
-        let cursor: string = 'cell';
-        const scrollX = this.container.scrollLeft;
-        const scrollY = this.container.scrollTop;
- 
-        const rightEdge = CONFIG.headerWidth + this.colModel.getColX(data.col) + this.colModel.getColWidth(data.col) - scrollX;
-        const bottomEdge = CONFIG.headerHeight + this.rowModel.getRowY(data.row) + this.rowModel.getRowHeight(data.row) - scrollY;
-
-        if (data.pointerY <= CONFIG.headerHeight && Math.abs(data.pointerX - rightEdge) < CONFIG.resizeHoverMargin) {
-            cursor = 'col-resize';
-        } else if (data.pointerX <= CONFIG.headerWidth && Math.abs(data.pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
-            cursor = 'row-resize';
-        }
-        this.canvas.style.cursor = cursor;
+        
+        this.currentState.onPointerMove(e, data);
     }
 
     private handlepointerUp(e: PointerEvent): void {
@@ -214,10 +186,8 @@ export class EditManager {
             this.canvas.releasePointerCapture(e.pointerId);
         }
  
-        if (this.activeHandler) {
-            this.activeHandler.onPointerUp(e);
-            this.activeHandler = null; // Reset for the next click
-        }
+        this.currentState.onPointerUp(e);
+        this.currentState = new IdleHandler(this.gridContext);
     }
 
     private handleDoubleClick(e: MouseEvent): void {

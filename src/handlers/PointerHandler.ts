@@ -14,6 +14,9 @@ export interface GridContext
     renderCallback:()=>void;
     updateScrollbarCallback:()=>void;
     scrollToCell:(row:number, col:number)=>void;
+    changeState:(newState: PointerHandler)=>void;
+    getScrollPosition:()=> {scrollX: number, scrollY: number};
+    setCursor:(cursor: string)=>void;
 }
 export interface CellEventData 
 {
@@ -27,8 +30,8 @@ export abstract class PointerHandler
 {
     constructor(protected ctx: GridContext) {}
  
-    // Returns true if this handler should take over the drag operation
-    abstract onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): boolean;
+    // State pattern entry point
+    abstract onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): void;
     abstract onPointerMove(e: PointerEvent, data: CellEventData): void;
     abstract onPointerUp(e: PointerEvent): void;
 }
