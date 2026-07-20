@@ -11,7 +11,7 @@ import { ResizeRowCommand } from '../commands/ResizeRowCommand.js';
 import type { ViewportManager } from './ViewportManager.js';
 import { PointerHandler } from '../handlers/PointerHandler.js';
 import { IdleHandler } from '../handlers/IdleHandler.js';
-
+import type { GridContext } from '../handlers/PointerHandler.js';
 export class EditManager {
     private lastpointerDownX: number = 0;
     private lastpointerDownY: number = 0;
