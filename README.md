@@ -28,6 +28,13 @@ For running ts files of backend for canvas rendering
 # Folder & Class Structure
 
 Excel.git/
+├── .gitignore
+├── README.md
+├── data.json
+├── image.png
+├── index.html
+├── package-lock.json
+├── package.json
 ├── src/
 │   ├── commands/
 │   │   ├── EditCellCommand.ts
@@ -42,6 +49,13 @@ Excel.git/
 │   │   └── Config.ts
 │   ├── data/
 │   │   └── JsonDataLoader.ts
+│   ├── handlers/
+│   │   ├── CellSelectionHandler.ts
+│   │   ├── ColumnSelectionHandler.ts
+│   │   ├── IdleHandler.ts
+│   │   ├── PointerHandler.ts
+│   │   ├── ResizingHandler.ts
+│   │   └── RowSelectionHandler.ts
 │   ├── index.ts
 │   ├── managers/
 │   │   ├── CommandManager.ts
@@ -54,14 +68,8 @@ Excel.git/
 │       ├── GridDataStore.ts
 │       └── RowModel.ts
 ├── styles.css
-├── .gitignore
-├── README.md
-├── data.json
-├── image.png
-├── index.html
-├── package-lock.json
-├── package.json
 └── tsconfig.json
+
 
 
 # How OOP Concepts are applied
@@ -86,7 +94,101 @@ Excel.git/
 
 - Dependency Injection : object receives its required dependencies from an external source for example grid is getting dataStore from JsonDataLoader instead of creating it by itself
 
+# How command pattern is applied
 
+- whenever any action like resizing,editing cell happen,it store that action in undoStack and clear redo history. and when pressing Ctrl+Z, it redo undoAction and store it in redoStack. 
+
+# How Virtual Rednering Work
+
+- When user is scrolling through scrollBar or any other method,First it saves scrollHeight and scrollWidth to scrollContent of Grid.
+- After getting visible range from viewport manager,it draws only the part of which is visible in Excel.
+
+# How data is generated and loaded
+
+- Data is generated first time using generateData. And it is saved to data.json . 
+- Every time I load/reload it fetch data from data.json.
+
+# How undo/redo works
+
+- Whenver any action happen,it stores its value in undostakc/redostack given in CommandManager.
+
+- if undo happen,then it takes first action from undo stack and moves it to the redostack. Also remove the action that is given in undoStack.
+
+- if redo happen, then it takes fiest action from redo stack and moves it to the undostack. Also make that action which is in redostack. 
+
+- if any new action happen, then it empty redostack because it is override by new action.
+
+# Test cases covered
+
+Action: Editing Cell
+Expected Output: Save changes to Cell
+
+Action: Edit Numeric cell with Text
+Expected Output: Save changes to Cell and update Stats
+
+Action: Edit and undo 
+Expected Output: undo to last value
+
+Action: Edit and redo
+Expected Output: nothing happen
+
+Action: Resize column, undo redo
+Expected Output: Resizing correctly,donot overlap or hide column
+
+Action: Resize row, undo redo
+Expected Output: Resizing correctly,donot overlap or hide row
+
+Action: Summary numeric range
+Expected Output: getting output correctly,does not include text value in count and mathematic actions
+
+Action: Data Loading
+Expected Output: Loading data from data.json file and working correctly,generate 50000 records
+
+Action: Scroll near last rows
+Expected Output: Scroll more in bottom
+
+Action: Scroll near last column
+Expected Output: Scroll more in right side
+
+Action: Load time observation
+Expected Output: load time : 300-500 ms 
+
+Action: Arrow Key Navigation
+Expected Output: Navigating perfectly and scrolling if going any direction 
+
+Action: Enter Key
+Expected Output: Toggle Edit button for editing/commiting 
+
+Action:Ctrl+Z & Ctrl+Y
+Expected Output:Make Undo Redo Operations
+
+Action: Selecting Range
+Expected Output: By dragging pointer,get selection area for cell
+
+Action: Esc Key
+Expected Output: Do not commit edit and save previous/last value of cell
+
+Action: Refresh Rate
+Expected Output: While Scrolling,it only limit to render 60 times per second. If it exceeds,then page goes to waiting state.
+
+Action: Handle Negative numbers correctly
+Expected Output: Correctly give output by taking negative numbers 
+
+Action: Cursor Style
+Expected Output: Give appropriate cursor style in all area
+
+Action: Scrolling when selecting range
+Expected Output: Viewport scroll in direction where it is on border
+
+# Accesssibility Consideration
+
+- By using any pointer, user can navigate through any cell in Excel
+- By using keyboard, user can undo/redo operations and also edit cell values. 
+
+# Known limitations and next improvements
+
+- Data saving in json file need backend server 
+- Multiple Sheets in one Grid View
 
 # Challenges
 
@@ -94,9 +196,3 @@ Excel.git/
 - Resizing Columns/Rows makes respective Columns/Rows hidden
 - Lag Problem- solved using AnimationFrame
 
-
-
-Column Resizing
-Row Resizing
-Selection Manager
-pointer Event Manager

@@ -221,7 +221,10 @@ export class EditManager {
             e.preventDefault();
 
             if (this.selection.hasSelection()) {
-                this.openEditor(this.selection.startRow, this.selection.startCol);
+                const range = this.selection.getRange();
+        const row = range.rMin;
+        const col = range.cMin;
+                this.openEditor(row, col);
             }
             return;
         }
