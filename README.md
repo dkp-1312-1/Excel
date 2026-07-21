@@ -161,8 +161,8 @@ Output: Navigating perfectly and scrolling if going any direction
 Action: Enter Key
 Output: Toggle Edit button for editing/commiting 
 
-Action:Ctrl+Z & Ctrl+Y
-Output:Make Undo Redo Operations
+Action: Ctrl+Z & Ctrl+Y
+Output: Make Undo Redo Operations
 
 Action: Selecting Range
 Output: By dragging pointer,get selection area for cell

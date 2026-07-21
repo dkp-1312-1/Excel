@@ -58,7 +58,7 @@ export class Grid {
     }
 
     private async init(): Promise<void> {
-        const dataLoader = new JsonDataLoader();
+        const dataLoader : JsonDataLoader= new JsonDataLoader();
         await dataLoader.loadJSON('data.json', this.dataStore);
         this.updateScrollbarSize();
 

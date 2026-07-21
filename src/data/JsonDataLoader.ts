@@ -6,7 +6,7 @@ export class JsonDataLoader {
   public async loadJSON(url: string, dataStore: GridDataStore): Promise<void> { 
     try { 
       // Update the path to point to your local data.json file
-      const response = await fetch('../../data.json'); 
+      const response:Response= await fetch('../../data.json'); 
       
       if (!response.ok) { 
         throw new Error(`Failed to fetch data: ${response.statusText}`); 
@@ -15,10 +15,10 @@ export class JsonDataLoader {
       const data: Record<string, string | number> = await response.json(); 
       
       for (const key in data) { 
-        const parts = key.split(','); 
+        const parts:string[] = key.split(','); 
         if (parts.length === 2) { 
-          const row = parseInt(parts[0]!, 10); 
-          const col = parseInt(parts[1]!, 10); 
+          const row :number= parseInt(parts[0]!, 10); 
+          const col :number= parseInt(parts[1]!, 10); 
           dataStore.setValue(row, col, data[key]!); 
         } 
       } 

@@ -3,7 +3,8 @@ import { GridDataStore } from '../models/GridDataStore.js';
 import { RowModel } from '../models/RowModel.js';
 import { ColumnModel } from '../models/ColumnModel.js';
 import { ViewportManager } from '../managers/ViewportManager.js';
-import { SelectionManager } from '../managers/SelectionManager.js';
+import { SelectionManager, type rangeData } from '../managers/SelectionManager.js';
+import type { CellModel } from '../models/CellModel.js';
 
 export class GridRenderer {
     private ctx: CanvasRenderingContext2D;
@@ -36,15 +37,15 @@ export class GridRenderer {
         //draw cells and texts
         for (let r: number = startRow; r <= endRow; r++) {
             for (let c: number = startCol; c <= endCol; c++) {
-                const x = CONFIG.headerWidth + colModel.getColX(c) - scrollX;
-                const y = CONFIG.headerHeight + rowModel.getRowY(r) - scrollY;
-                const w = colModel.getColWidth(c);
-                const h = rowModel.getRowHeight(r);
+                const x:number = CONFIG.headerWidth + colModel.getColX(c) - scrollX;
+                const y:number= CONFIG.headerHeight + rowModel.getRowY(r) - scrollY;
+                const w:number = colModel.getColWidth(c);
+                const h:number = rowModel.getRowHeight(r);
 
                 this.ctx.strokeStyle = CONFIG.gridColor;
                 this.ctx.strokeRect(x, y, w, h);
 
-                const cell = this.dataStore.getValue(r, c);
+                const cell:CellModel = this.dataStore.getValue(r, c)!;
                 if (cell !== null && cell.value !== '') {
                     //Set Value in Cell
                     this.ctx.fillStyle = CONFIG.textColor;
@@ -61,13 +62,13 @@ export class GridRenderer {
         //draw selection
         if (selection.hasSelection()) {
             //get coordinates for length and width
-            const range = selection.getRange();
-            const x = CONFIG.headerWidth + colModel.getColX(range.cMin) - scrollX;
-            const y = CONFIG.headerHeight + rowModel.getRowY(range.rMin) - scrollY;
+            const range : rangeData= selection.getRange();
+            const x : number= CONFIG.headerWidth + colModel.getColX(range.cMin) - scrollX;
+            const y : number= CONFIG.headerHeight + rowModel.getRowY(range.rMin) - scrollY;
              // Width is the right edge of cMax minus the left edge of cMin
-            const selW = colModel.getColWidth(range.cMax) + colModel.getColX(range.cMax) - colModel.getColX(range.cMin);
+            const selW :number= colModel.getColWidth(range.cMax) + colModel.getColX(range.cMax) - colModel.getColX(range.cMin);
             // Height is the bottom edge of rMax minus the top edge of rMin
-            const selH = rowModel.getRowHeight(range.rMax) + rowModel.getRowY(range.rMax) - rowModel.getRowY(range.rMin);
+            const selH :number= rowModel.getRowHeight(range.rMax) + rowModel.getRowY(range.rMax) - rowModel.getRowY(range.rMin);
  
             //draw box for selection
             this.ctx.fillStyle = CONFIG.selectionBg;
@@ -82,8 +83,8 @@ export class GridRenderer {
         this.ctx.fillStyle = CONFIG.headerBg;
         this.ctx.fillRect(CONFIG.headerWidth, 0, width, CONFIG.headerHeight);
         for (let c: number = startCol; c <= endCol; c++) {
-            const x = CONFIG.headerWidth + colModel.getColX(c) - scrollX;
-            const w = colModel.getColWidth(c);
+            const x :number= CONFIG.headerWidth + colModel.getColX(c) - scrollX;
+            const w :number= colModel.getColWidth(c);
 
             this.ctx.strokeStyle = CONFIG.headerBorderColor;
             this.ctx.strokeRect(x, 0, w, CONFIG.headerHeight);

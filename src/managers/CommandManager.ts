@@ -12,7 +12,7 @@ export class CommandManager {
 
     public undo(): boolean {
         if (this.undoStack.length === 0) return false;
-        const cmd = this.undoStack.pop()!;
+        const cmd:ICommand = this.undoStack.pop()!;
         cmd.undo();
         this.redoStack.push(cmd);
         return true;
@@ -20,9 +20,9 @@ export class CommandManager {
 
     public redo(): boolean {
         if (this.redoStack.length === 0) return false;
-        const cmd = this.redoStack.pop()!;
+        const cmd:ICommand = this.redoStack.pop()!;
         cmd.execute();
         this.undoStack.push(cmd);
         return true;
     }
-}
+}

@@ -17,7 +17,7 @@ export class ColumnResizingHandler extends PointerHandler {
 
     onPointerMove(e: PointerEvent, data: CellEventData): boolean {
         if (this.resizingCol !== -1) {
-            const diff = e.clientX - this.startPointerPos;
+            const diff:number = e.clientX - this.startPointerPos;
             this.ctx.colModel.setColWidth(this.resizingCol, this.startSize + diff);
             this.ctx.renderCallback();
         }
@@ -26,7 +26,7 @@ export class ColumnResizingHandler extends PointerHandler {
 
     onPointerUp(e: PointerEvent): boolean {
         if (this.resizingCol !== -1) {
-            const finalWidth = this.ctx.colModel.getColWidth(this.resizingCol);
+            const finalWidth:number = this.ctx.colModel.getColWidth(this.resizingCol);
             if (finalWidth !== this.startSize) {
                 this.ctx.cmdManager.executeCommand(new ResizeColumnCommand(this.ctx.colModel, this.resizingCol, this.startSize, finalWidth));
             }

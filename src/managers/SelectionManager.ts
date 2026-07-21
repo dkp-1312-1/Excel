@@ -1,4 +1,12 @@
 import { CONFIG } from '../config/Config.js';
+export interface rangeData
+{
+    rMin:number;
+    rMax:number;
+    cMin:number;
+    cMax:number;
+
+}
 export class SelectionManager
 {
     public startRow:number=-1;

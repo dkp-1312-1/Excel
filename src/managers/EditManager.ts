@@ -1,7 +1,7 @@
 import { CONFIG } from '../config/Config.js';
 import { RowModel } from '../models/RowModel.js';
 import { ColumnModel } from '../models/ColumnModel.js';
-import { SelectionManager } from './SelectionManager.js';
+import { SelectionManager, type rangeData } from './SelectionManager.js';
 import { SummaryCalculator } from '../components/SummaryCalculator.js';
 import { GridDataStore } from '../models/GridDataStore.js';
 import { CommandManager } from './CommandManager.js';
@@ -11,7 +11,8 @@ import { ResizeRowCommand } from '../commands/ResizeRowCommand.js';
 import type { ViewportManager } from './ViewportManager.js';
 import { PointerHandler } from '../handlers/PointerHandler.js';
 import { IdleHandler } from '../handlers/IdleHandler.js';
-import type { GridContext } from '../handlers/PointerHandler.js';
+import type { CellEventData, GridContext } from '../handlers/PointerHandler.js';
+import type { CellModel } from '../models/CellModel.js';
 export class EditManager {
     private lastpointerDownX: number = 0;
     private lastpointerDownY: number = 0;
@@ -128,16 +129,16 @@ export class EditManager {
     }
 
     private getCellFromEvent(e: MouseEvent) {
-        const rect = this.canvas.getBoundingClientRect();
-        const pointerX = e.clientX - rect.left;
-        const pointerY = e.clientY - rect.top;
+        const rect:DOMRect = this.canvas.getBoundingClientRect();
+        const pointerX :number= e.clientX - rect.left;
+        const pointerY:number = e.clientY - rect.top;
 
-        const scrollX = this.container.scrollLeft;
-        const scrollY = this.container.scrollTop;
+        const scrollX:number = this.container.scrollLeft;
+        const scrollY:number = this.container.scrollTop;
 
         // Calculate absolute grid coordinates
-        const targetX = pointerX - CONFIG.headerWidth + scrollX;
-        const targetY = pointerY - CONFIG.headerHeight + scrollY;
+        const targetX:number = pointerX - CONFIG.headerWidth + scrollX;
+        const targetY:number = pointerY - CONFIG.headerHeight + scrollY;
 
         let col: number = 1;
         while (this.colModel.getColX(col) + this.colModel.getColWidth(col) <= targetX && col < CONFIG.totalCols) {
@@ -163,14 +164,14 @@ export class EditManager {
             this.commitEdit();
         }
 
-        const data = this.getCellFromEvent(e);
-        const currentCursor = this.canvas.style.cursor;
+        const data:CellEventData = this.getCellFromEvent(e);
+        const currentCursor:string = this.canvas.style.cursor;
 
         this.currentState.onPointerDown(e, data, currentCursor);
     }
 
     private handlepointerMove(e: PointerEvent): void {
-        const data = this.getCellFromEvent(e);
+        const data:CellEventData = this.getCellFromEvent(e);
 
         // Track drag time for double click logic
         if (Math.abs(e.clientX - this.lastpointerDownX) > CONFIG.dragThreshold || Math.abs(e.clientY - this.lastpointerDownY) > CONFIG.dragThreshold) {
@@ -179,8 +180,8 @@ export class EditManager {
         let cursor: string = 'cell';
         const { scrollX, scrollY } = this.gridContext.getScrollPosition();
 
-        const rightEdge = CONFIG.headerWidth + this.gridContext.colModel.getColX(data.col) + this.gridContext.colModel.getColWidth(data.col) - scrollX;
-        const bottomEdge = CONFIG.headerHeight + this.gridContext.rowModel.getRowY(data.row) + this.gridContext.rowModel.getRowHeight(data.row) - scrollY;
+        const rightEdge:number = CONFIG.headerWidth + this.gridContext.colModel.getColX(data.col) + this.gridContext.colModel.getColWidth(data.col) - scrollX;
+        const bottomEdge:number = CONFIG.headerHeight + this.gridContext.rowModel.getRowY(data.row) + this.gridContext.rowModel.getRowHeight(data.row) - scrollY;
 
         if (data.pointerY <= CONFIG.headerHeight && Math.abs(data.pointerX - rightEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'col-resize';
@@ -207,7 +208,7 @@ export class EditManager {
         if (Date.now() - this.lastDragTime < CONFIG.doubleClickDragTimeout) {
             return;
         }
-        const { row, col, pointerX, pointerY } = this.getCellFromEvent(e);
+        const { row, col, pointerX, pointerY } :CellEventData = this.getCellFromEvent(e);
 
         if (pointerX <= CONFIG.headerWidth || pointerY <= CONFIG.headerHeight) {
             return;
@@ -231,15 +232,15 @@ export class EditManager {
             e.preventDefault();
 
             if (this.selection.hasSelection()) {
-                const range = this.selection.getRange();
-                const row = range.rMin;
-                const col = range.cMin;
+                const range:rangeData = this.selection.getRange();
+                const row:number = range.rMin;
+                const col:number = range.cMin;
                 this.openEditor(row, col);
             }
             return;
         }
 
-        const isArrowKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
+        const isArrowKey:boolean = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key);
 
         if (!isArrowKey) { return; }
 
@@ -271,10 +272,10 @@ export class EditManager {
     }
 
     private scrollToCell(row: number, col: number): void {
-        const scrollX = this.container.scrollLeft;
-        const scrollY = this.container.scrollTop;
-        const viewWidth = this.container.clientWidth;
-        const viewHeight = this.container.clientHeight;
+        const scrollX: number = this.container.scrollLeft;
+        const scrollY: number = this.container.scrollTop;
+        const viewWidth: number = this.container.clientWidth;
+        const viewHeight: number = this.container.clientHeight;
 
         const { startRow, endRow, startCol, endCol } = this.viewPortManager.getVisibleRange(scrollX, scrollY, viewWidth, viewHeight);
 
@@ -291,21 +292,21 @@ export class EditManager {
         }
     }
     private openEditor(row: number, col: number) {
-        const scrollX = this.container.scrollLeft;
-        const scrollY = this.container.scrollTop;
+        const scrollX:number = this.container.scrollLeft;
+        const scrollY:number = this.container.scrollTop;
 
-        const x = CONFIG.headerWidth + this.colModel.getColX(col);
-        const y = CONFIG.headerHeight + this.rowModel.getRowY(row);
-        const w = this.colModel.getColWidth(col);
-        const h = this.rowModel.getRowHeight(row);
+        const x:number = CONFIG.headerWidth + this.colModel.getColX(col);
+        const y:number = CONFIG.headerHeight + this.rowModel.getRowY(row);
+        const w:number = this.colModel.getColWidth(col);
+        const h:number = this.rowModel.getRowHeight(row);
         this.editor.style.left = `${x}px`;
         this.editor.style.top = `${y}px`;
         this.editor.style.width = `${w}px`;
         this.editor.style.height = `${h}px`;
         this.editor.style.display = 'block';
 
-        const cell = this.dataStore.getValue(row, col);
-        const currentVal = cell ? cell.value : '';
+        const cell:CellModel = this.dataStore.getValue(row, col)!;
+        const currentVal:string|number = cell ? cell.value : '';
         this.editor.value = currentVal.toString();
         this.editor.focus();
     }
@@ -313,17 +314,17 @@ export class EditManager {
     private commitEdit(): void {
         if (this.editor.style.display === 'none') return;
 
-        const range = this.selection.getRange();
-        const row = range.rMin;
-        const col = range.cMin;
+        const range:rangeData = this.selection.getRange();
+        const row:number = range.rMin;
+        const col:number = range.cMin;
 
-        const cell = this.dataStore.getValue(row, col);
-        const oldVal = cell ? cell.value : '';
-        const newVal = this.editor.value;
+        const cell:CellModel = this.dataStore.getValue(row, col)!;
+        const oldVal:string|number = cell ? cell.value : '';
+        const newVal:string|number = this.editor.value;
 
         // Only create a command if the text actually changed
         if (oldVal.toString() !== newVal.toString()) {
-            const cmd = new EditCellCommand(this.dataStore, row, col, oldVal, newVal);
+            const cmd:EditCellCommand = new EditCellCommand(this.dataStore, row, col, oldVal, newVal);
             this.cmdManager.executeCommand(cmd);
         }
 

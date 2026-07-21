@@ -17,7 +17,7 @@ export class RowResizingHandler extends PointerHandler {
 
     onPointerMove(e: PointerEvent, data: CellEventData): boolean {
         if (this.resizingRow !== -1) {
-            const diff = e.clientY - this.startPointerPos;
+            const diff:number = e.clientY - this.startPointerPos;
             this.ctx.rowModel.setRowHeight(this.resizingRow, this.startSize + diff);
             this.ctx.renderCallback();
         }
@@ -25,8 +25,9 @@ export class RowResizingHandler extends PointerHandler {
     }
 
     onPointerUp(e: PointerEvent): boolean {
-        if (this.resizingRow !== -1) {
-            const finalHeight = this.ctx.rowModel.getRowHeight(this.resizingRow);
+        if (this.resizingRow !== -1) 
+        {
+            const finalHeight:number = this.ctx.rowModel.getRowHeight(this.resizingRow);
             if (finalHeight !== this.startSize) {
                 this.ctx.cmdManager.executeCommand(new ResizeRowCommand(this.ctx.rowModel, this.resizingRow, this.startSize, finalHeight));
             }
