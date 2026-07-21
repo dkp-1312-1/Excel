@@ -85,8 +85,7 @@ export class EditManager {
         this.container.addEventListener('scroll', this.boundScroll)
     }
 
-    private initializeHandlers():void
-    {
+    private initializeHandlers(): void {
         this.gridContext = {
             rowModel: this.rowModel,
             colModel: this.colModel,
@@ -95,7 +94,7 @@ export class EditManager {
             cmdManager: this.cmdManager,
             renderCallback: this.renderCallback,
             updateScrollbarCallback: this.updateScrollbarCallback,
-            scrollToCell: (row:number, col:number) => this.scrollToCell(row, col),
+            scrollToCell: (row: number, col: number) => this.scrollToCell(row, col),
             changeState: (newState: PointerHandler) => {
                 this.currentState = newState;
             },
@@ -166,18 +165,29 @@ export class EditManager {
 
         const data = this.getCellFromEvent(e);
         const currentCursor = this.canvas.style.cursor;
- 
+
         this.currentState.onPointerDown(e, data, currentCursor);
     }
 
     private handlepointerMove(e: PointerEvent): void {
         const data = this.getCellFromEvent(e);
 
-         // Track drag time for double click logic
+        // Track drag time for double click logic
         if (Math.abs(e.clientX - this.lastpointerDownX) > CONFIG.dragThreshold || Math.abs(e.clientY - this.lastpointerDownY) > CONFIG.dragThreshold) {
             this.lastDragTime = Date.now();
         }
-        
+        let cursor: string = 'cell';
+        const { scrollX, scrollY } = this.gridContext.getScrollPosition();
+
+        const rightEdge = CONFIG.headerWidth + this.gridContext.colModel.getColX(data.col) + this.gridContext.colModel.getColWidth(data.col) - scrollX;
+        const bottomEdge = CONFIG.headerHeight + this.gridContext.rowModel.getRowY(data.row) + this.gridContext.rowModel.getRowHeight(data.row) - scrollY;
+
+        if (data.pointerY <= CONFIG.headerHeight && Math.abs(data.pointerX - rightEdge) < CONFIG.resizeHoverMargin) {
+            cursor = 'col-resize';
+        } else if (data.pointerX <= CONFIG.headerWidth && Math.abs(data.pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
+            cursor = 'row-resize';
+        }
+        this.gridContext.setCursor(cursor);
         this.currentState.onPointerMove(e, data);
     }
 
@@ -185,7 +195,7 @@ export class EditManager {
         if (this.canvas.hasPointerCapture(e.pointerId)) {
             this.canvas.releasePointerCapture(e.pointerId);
         }
- 
+
         this.currentState.onPointerUp(e);
         this.currentState = new IdleHandler(this.gridContext);
     }
@@ -216,14 +226,14 @@ export class EditManager {
                 this.editor.style.display = 'none';
             }
             return;
-        }   
+        }
         if (e.key === 'Enter' || e.key === CONFIG.commitKey) {
             e.preventDefault();
 
             if (this.selection.hasSelection()) {
                 const range = this.selection.getRange();
-        const row = range.rMin;
-        const col = range.cMin;
+                const row = range.rMin;
+                const col = range.cMin;
                 this.openEditor(row, col);
             }
             return;
@@ -270,13 +280,13 @@ export class EditManager {
 
         if (col <= startCol) {
             this.container.scrollLeft = this.colModel.getColX(col);
-        } else if (col >= endCol-2) {
+        } else if (col >= endCol - 2) {
             this.container.scrollLeft = CONFIG.headerWidth + this.colModel.getColX(col) + this.colModel.getColWidth(col) - viewWidth;
         }
 
         if (row <= startRow) {
             this.container.scrollTop = this.rowModel.getRowY(row);
-        } else if (row >= endRow-2) {
+        } else if (row >= endRow - 2) {
             this.container.scrollTop = CONFIG.headerHeight + this.rowModel.getRowY(row) + this.rowModel.getRowHeight(row) - viewHeight;
         }
     }

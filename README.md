@@ -23,18 +23,12 @@ For running ts files of backend for canvas rendering
 - Summary Calculation : In bottom of page, it shows total count,max,min,sum,average
 - Undo/Redo : By typing Ctrl+Z ,Ctrl Y ,you can undo/redo actions 
 - Keyboarding Basics : Navigation through arrows,Enter for editing or saving, Esc to cancel edit.
+- State Pattern : Used State Pattern for handling pointer events
 
 
 # Folder & Class Structure
 
-Excel.git/
-├── .gitignore
-├── README.md
-├── data.json
-├── image.png
-├── index.html
-├── package-lock.json
-├── package.json
+Excel/
 ├── src/
 │   ├── commands/
 │   │   ├── EditCellCommand.ts
@@ -51,22 +45,30 @@ Excel.git/
 │   │   └── JsonDataLoader.ts
 │   ├── handlers/
 │   │   ├── CellSelectionHandler.ts
+│   │   ├── ColumnResizingHandler.ts
 │   │   ├── ColumnSelectionHandler.ts
 │   │   ├── IdleHandler.ts
 │   │   ├── PointerHandler.ts
-│   │   ├── ResizingHandler.ts
+│   │   ├── RowResizingHandler.ts
 │   │   └── RowSelectionHandler.ts
-│   ├── index.ts
 │   ├── managers/
 │   │   ├── CommandManager.ts
 │   │   ├── EditManager.ts
 │   │   ├── SelectionManager.ts
 │   │   └── ViewportManager.ts
-│   └── models/
-│       ├── CellModel.ts
-│       ├── ColumnModel.ts
-│       ├── GridDataStore.ts
-│       └── RowModel.ts
+│   ├── models/
+│   │   ├── CellModel.ts
+│   │   ├── ColumnModel.ts
+│   │   ├── GridDataStore.ts
+│   │   └── RowModel.ts
+│   └── index.ts
+├── .gitignore
+├── data.json
+├── image.png
+├── index.html
+├── package-lock.json
+├── package.json
+├── README.md
 ├── styles.css
 └── tsconfig.json
 
@@ -80,7 +82,7 @@ Excel.git/
 
 - Polymorphism : Using same fuction name to override action for different classes. For Example Undo/Redo Commands are used by cell,row,column with same name but doing different actions
 
-- Inheritance : Mkae specialze class from general class for example All command class are inherited from ICommand class.
+- Inheritance : Make specialze class from general class for example All command class are inherited from ICommand class.
 
 # How SOLID Principles are applied
 
@@ -121,64 +123,64 @@ Excel.git/
 # Test cases covered
 
 Action: Editing Cell
-Expected Output: Save changes to Cell
+Output: Save changes to Cell
 
 Action: Edit Numeric cell with Text
-Expected Output: Save changes to Cell and update Stats
+Output: Save changes to Cell and update Stats
 
 Action: Edit and undo 
-Expected Output: undo to last value
+Output: undo to last value
 
 Action: Edit and redo
-Expected Output: nothing happen
+Output: nothing happen
 
 Action: Resize column, undo redo
-Expected Output: Resizing correctly,donot overlap or hide column
+Output: Resizing correctly,donot overlap or hide column
 
 Action: Resize row, undo redo
-Expected Output: Resizing correctly,donot overlap or hide row
+Output: Resizing correctly,donot overlap or hide row
 
 Action: Summary numeric range
-Expected Output: getting output correctly,does not include text value in count and mathematic actions
+Output: getting output correctly,does not include text value in count and mathematic actions
 
 Action: Data Loading
-Expected Output: Loading data from data.json file and working correctly,generate 50000 records
+Output: Loading data from data.json file and working correctly,generate 50000 records
 
 Action: Scroll near last rows
-Expected Output: Scroll more in bottom
+Output: Scroll more in bottom
 
 Action: Scroll near last column
-Expected Output: Scroll more in right side
+Output: Scroll more in right side
 
 Action: Load time observation
-Expected Output: load time : 300-500 ms 
+Output: load time : 300-500 ms 
 
 Action: Arrow Key Navigation
-Expected Output: Navigating perfectly and scrolling if going any direction 
+Output: Navigating perfectly and scrolling if going any direction 
 
 Action: Enter Key
-Expected Output: Toggle Edit button for editing/commiting 
+Output: Toggle Edit button for editing/commiting 
 
 Action:Ctrl+Z & Ctrl+Y
-Expected Output:Make Undo Redo Operations
+Output:Make Undo Redo Operations
 
 Action: Selecting Range
-Expected Output: By dragging pointer,get selection area for cell
+Output: By dragging pointer,get selection area for cell
 
 Action: Esc Key
-Expected Output: Do not commit edit and save previous/last value of cell
+Output: Do not commit edit and save previous/last value of cell
 
 Action: Refresh Rate
-Expected Output: While Scrolling,it only limit to render 60 times per second. If it exceeds,then page goes to waiting state.
+Output: While Scrolling,it only limit to render 60 times per second. If it exceeds,then page goes to waiting state.
 
 Action: Handle Negative numbers correctly
-Expected Output: Correctly give output by taking negative numbers 
+Output: Correctly give output by taking negative numbers 
 
 Action: Cursor Style
-Expected Output: Give appropriate cursor style in all area
+Output: Give appropriate cursor style in all area
 
 Action: Scrolling when selecting range
-Expected Output: Viewport scroll in direction where it is on border
+Output: Viewport scroll in direction where it is on border
 
 # Accesssibility Consideration
 

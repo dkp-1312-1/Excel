@@ -28,19 +28,8 @@ export class IdleHandler extends PointerHandler {
     }
 
     onPointerMove(e: PointerEvent, data: CellEventData): boolean {
-        let cursor: string = 'cell';
-        const { scrollX, scrollY } = this.ctx.getScrollPosition();
-
-        const rightEdge = CONFIG.headerWidth + this.ctx.colModel.getColX(data.col) + this.ctx.colModel.getColWidth(data.col) - scrollX;
-        const bottomEdge = CONFIG.headerHeight + this.ctx.rowModel.getRowY(data.row) + this.ctx.rowModel.getRowHeight(data.row) - scrollY;
-
-        if (data.pointerY <= CONFIG.headerHeight && Math.abs(data.pointerX - rightEdge) < CONFIG.resizeHoverMargin) {
-            cursor = 'col-resize';
-        } else if (data.pointerX <= CONFIG.headerWidth && Math.abs(data.pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
-            cursor = 'row-resize';
-        }
-        this.ctx.setCursor(cursor);
-        return true;
+        // Do nothing in idle state
+       return true;
     }
 
     onPointerUp(e: PointerEvent): boolean {

@@ -35,10 +35,13 @@ export class SummaryCalculator {
             }
         }
         
-        if (hasNum) {
+        if (hasNum) 
+        {
             const avg = (sum / count).toFixed(2);
             this.statsEl.innerText = `Count: ${count} | Sum: ${sum.toFixed(2)} | Avg: ${avg} | Min: ${min} | Max: ${max}`;
-        } else {
+        } 
+        else 
+        {
             this.statsEl.innerText = `Count: ${count}`;
         }
     }
