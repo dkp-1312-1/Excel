@@ -31,7 +31,7 @@ export abstract class PointerHandler
     constructor(protected ctx: GridContext) {}
  
     // State pattern entry point
-    abstract onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): void;
-    abstract onPointerMove(e: PointerEvent, data: CellEventData): void;
-    abstract onPointerUp(e: PointerEvent): void;
+    abstract onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): boolean;
+    abstract onPointerMove(e: PointerEvent, data: CellEventData): boolean;
+    abstract onPointerUp(e: PointerEvent): boolean;
 }

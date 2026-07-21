@@ -1,30 +1,33 @@
 import { PointerHandler } from "./PointerHandler.js";
 import type { CellEventData } from "./PointerHandler.js";
-import { ResizingHandler } from "./ResizingHandler.js";
+import { ColumnResizingHandler } from "./ColumnResizingHandler.js";
+import { RowResizingHandler } from "./RowResizingHandler.js";
 import { ColumnSelectionHandler } from "./ColumnSelectionHandler.js";
 import { RowSelectionHandler } from "./RowSelectionHandler.js";
 import { CellSelectionHandler } from "./CellSelectionHandler.js";
 import { CONFIG } from "../config/Config.js";
 
 export class IdleHandler extends PointerHandler {
-    onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): void {
-        let newState: PointerHandler;
+    onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): boolean {
+        const handlers = [
+            ColumnResizingHandler,
+            RowResizingHandler,
+            ColumnSelectionHandler,
+            RowSelectionHandler,
+            CellSelectionHandler
+        ];
 
-        if (cursor === 'col-resize' || cursor === 'row-resize') {
-            newState = new ResizingHandler(this.ctx);
-        } else if (data.pointerY <= CONFIG.headerHeight && data.pointerX > CONFIG.headerWidth) {
-            newState = new ColumnSelectionHandler(this.ctx);
-        } else if (data.pointerX <= CONFIG.headerWidth && data.pointerY > CONFIG.headerHeight) {
-            newState = new RowSelectionHandler(this.ctx);
-        } else {
-            newState = new CellSelectionHandler(this.ctx);
+        for (const HandlerClass of handlers) {
+            const handler = new HandlerClass(this.ctx);
+            if (handler.onPointerDown(e, data, cursor)) {
+                this.ctx.changeState(handler);
+                return true;
+            }
         }
-
-        this.ctx.changeState(newState);
-        newState.onPointerDown(e, data, cursor);
+        return false;
     }
 
-    onPointerMove(e: PointerEvent, data: CellEventData): void {
+    onPointerMove(e: PointerEvent, data: CellEventData): boolean {
         let cursor: string = 'cell';
         const { scrollX, scrollY } = this.ctx.getScrollPosition();
 
@@ -37,9 +40,11 @@ export class IdleHandler extends PointerHandler {
             cursor = 'row-resize';
         }
         this.ctx.setCursor(cursor);
+        return true;
     }
 
-    onPointerUp(e: PointerEvent): void {
+    onPointerUp(e: PointerEvent): boolean {
         // Do nothing in idle state
+        return true;
     }
 }
