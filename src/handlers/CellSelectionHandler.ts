@@ -10,8 +10,8 @@ export class CellSelectionHandler extends PointerHandler {
     }
  
     onPointerMove(e: PointerEvent, data: CellEventData): boolean {
-        const safeRow = Math.max(1, Math.min(CONFIG.totalRows, data.row));
-        const safeCol = Math.max(1, Math.min(CONFIG.totalCols, data.col));
+        const safeRow:number = Math.max(1, Math.min(CONFIG.totalRows, data.row));
+        const safeCol:number = Math.max(1, Math.min(CONFIG.totalCols, data.col));
         this.ctx.selection.setEnd(safeRow, safeCol);
         this.ctx.scrollToCell(safeRow, safeCol);
         this.ctx.renderCallback();

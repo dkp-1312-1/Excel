@@ -13,7 +13,7 @@ export class ColumnSelectionHandler extends PointerHandler {
     onPointerMove(e: PointerEvent, data: CellEventData): boolean {
         if (!(data.pointerY <= CONFIG.headerHeight && data.pointerX > CONFIG.headerWidth)) return false;
         const safeCol:number = Math.max(1, Math.min(CONFIG.totalCols, data.col));
-        this.ctx.selection.setEnd(CONFIG.totalRows, safeCol); // Keep full column height
+        this.ctx.selection.setEnd(CONFIG.totalRows, safeCol); // Keep full column height 
         this.ctx.scrollToCell(data.row, safeCol);
         this.ctx.renderCallback();
         this.ctx.summaryCalculator.updateStats();

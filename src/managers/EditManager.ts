@@ -8,7 +8,7 @@ import { CommandManager } from './CommandManager.js';
 import { EditCellCommand } from '../commands/EditCellCommand.js';
 import { ResizeColumnCommand } from '../commands/ResizeColumnCommand.js';
 import { ResizeRowCommand } from '../commands/ResizeRowCommand.js';
-import type { ViewportManager } from './ViewportManager.js';
+import type { canvasRange, ViewportManager } from './ViewportManager.js';
 import { PointerHandler } from '../handlers/PointerHandler.js';
 import { IdleHandler } from '../handlers/IdleHandler.js';
 import type { CellEventData, GridContext } from '../handlers/PointerHandler.js';
@@ -128,13 +128,12 @@ export class EditManager {
         window.removeEventListener('keydown', this.boundWindowKeyDown);
     }
 
-    private getCellFromEvent(e: MouseEvent) {
+    private getCellFromEvent(e: MouseEvent) : CellEventData {
         const rect:DOMRect = this.canvas.getBoundingClientRect();
-        const pointerX :number= e.clientX - rect.left;
+        const pointerX:number= e.clientX - rect.left;
         const pointerY:number = e.clientY - rect.top;
 
-        const scrollX:number = this.container.scrollLeft;
-        const scrollY:number = this.container.scrollTop;
+        const {scrollX,scrollY}=this.gridContext.getScrollPosition();
 
         // Calculate absolute grid coordinates
         const targetX:number = pointerX - CONFIG.headerWidth + scrollX;
@@ -180,12 +179,13 @@ export class EditManager {
         let cursor: string = 'cell';
         const { scrollX, scrollY } = this.gridContext.getScrollPosition();
 
-        const rightEdge:number = CONFIG.headerWidth + this.gridContext.colModel.getColX(data.col) + this.gridContext.colModel.getColWidth(data.col) - scrollX;
-        const bottomEdge:number = CONFIG.headerHeight + this.gridContext.rowModel.getRowY(data.row) + this.gridContext.rowModel.getRowHeight(data.row) - scrollY;
+        const rightEdge:number = CONFIG.headerWidth + this.colModel.getColX(data.col) + this.colModel.getColWidth(data.col) - scrollX;
+        const bottomEdge:number = CONFIG.headerHeight + this.rowModel.getRowY(data.row) + this.rowModel.getRowHeight(data.row) - scrollY;
 
         if (data.pointerY <= CONFIG.headerHeight && Math.abs(data.pointerX - rightEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'col-resize';
-        } else if (data.pointerX <= CONFIG.headerWidth && Math.abs(data.pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
+        } 
+        else if (data.pointerX <= CONFIG.headerWidth && Math.abs(data.pointerY - bottomEdge) < CONFIG.resizeHoverMargin) {
             cursor = 'row-resize';
         }
         this.gridContext.setCursor(cursor);
@@ -231,7 +231,8 @@ export class EditManager {
         if (e.key === 'Enter' || e.key === CONFIG.commitKey) {
             e.preventDefault();
 
-            if (this.selection.hasSelection()) {
+            if(this.selection.isSingleCell())
+            {
                 const range:rangeData = this.selection.getRange();
                 const row:number = range.rMin;
                 const col:number = range.cMin;
@@ -272,12 +273,11 @@ export class EditManager {
     }
 
     private scrollToCell(row: number, col: number): void {
-        const scrollX: number = this.container.scrollLeft;
-        const scrollY: number = this.container.scrollTop;
+        const {scrollX,scrollY} = this.gridContext.getScrollPosition();
         const viewWidth: number = this.container.clientWidth;
         const viewHeight: number = this.container.clientHeight;
 
-        const { startRow, endRow, startCol, endCol } = this.viewPortManager.getVisibleRange(scrollX, scrollY, viewWidth, viewHeight);
+        const { startRow, endRow, startCol, endCol }: canvasRange = this.viewPortManager.getVisibleRange(scrollX, scrollY, viewWidth, viewHeight);
 
         if (col <= startCol) {
             this.container.scrollLeft = this.colModel.getColX(col);
@@ -292,8 +292,7 @@ export class EditManager {
         }
     }
     private openEditor(row: number, col: number) {
-        const scrollX:number = this.container.scrollLeft;
-        const scrollY:number = this.container.scrollTop;
+        const {scrollX,scrollY} = this.gridContext.getScrollPosition();
 
         const x:number = CONFIG.headerWidth + this.colModel.getColX(col);
         const y:number = CONFIG.headerHeight + this.rowModel.getRowY(row);

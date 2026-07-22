@@ -2,7 +2,7 @@ import { CONFIG } from '../config/Config.js';
 import { GridDataStore } from '../models/GridDataStore.js';
 import { RowModel } from '../models/RowModel.js';
 import { ColumnModel } from '../models/ColumnModel.js';
-import { ViewportManager } from '../managers/ViewportManager.js';
+import { ViewportManager, type canvasRange } from '../managers/ViewportManager.js';
 import { SelectionManager, type rangeData } from '../managers/SelectionManager.js';
 import type { CellModel } from '../models/CellModel.js';
 
@@ -27,7 +27,7 @@ export class GridRenderer {
         this.ctx.translate(0.5, 0.5);
 
         //Calculate visible range of scroll
-        const { startRow, endRow, startCol, endCol } = viewportManager.getVisibleRange(scrollX, scrollY, width, height);
+        const { startRow, endRow, startCol, endCol } :canvasRange = viewportManager.getVisibleRange(scrollX, scrollY, width, height);
         // console.log({ startRow, endRow, startCol, endCol, scrollX, scrollY, width, height });
         this.ctx.font = CONFIG.font;
 
@@ -59,26 +59,6 @@ export class GridRenderer {
             }
         }
 
-        //draw selection
-        if (selection.hasSelection()) {
-            //get coordinates for length and width
-            const range : rangeData= selection.getRange();
-            const x : number= CONFIG.headerWidth + colModel.getColX(range.cMin) - scrollX;
-            const y : number= CONFIG.headerHeight + rowModel.getRowY(range.rMin) - scrollY;
-             // Width is the right edge of cMax minus the left edge of cMin
-            const selW :number= colModel.getColWidth(range.cMax) + colModel.getColX(range.cMax) - colModel.getColX(range.cMin);
-            // Height is the bottom edge of rMax minus the top edge of rMin
-            const selH :number= rowModel.getRowHeight(range.rMax) + rowModel.getRowY(range.rMax) - rowModel.getRowY(range.rMin);
- 
-            //draw box for selection
-            this.ctx.fillStyle = CONFIG.selectionBg;
-            this.ctx.fillRect(x, y, selW, selH);
-            this.ctx.strokeStyle = CONFIG.selectionBorder;
-            this.ctx.lineWidth = 2;
-            this.ctx.strokeRect(x, y, selW, selH);
-            this.ctx.lineWidth = 1;
-        }
-
         //draw  First Row As A,B,C,... 
         this.ctx.fillStyle = CONFIG.headerBg;
         this.ctx.fillRect(CONFIG.headerWidth, 0, width, CONFIG.headerHeight);
@@ -99,8 +79,8 @@ export class GridRenderer {
         this.ctx.fillStyle = CONFIG.headerBg;
         this.ctx.fillRect(0, CONFIG.headerHeight, CONFIG.headerWidth, height);
         for (let r: number = startRow; r <= endRow; r++) {
-            const y = CONFIG.headerHeight + rowModel.getRowY(r) - scrollY;
-            const h = rowModel.getRowHeight(r);
+            const y :number= CONFIG.headerHeight + rowModel.getRowY(r) - scrollY;
+            const h :number= rowModel.getRowHeight(r);
 
             this.ctx.strokeStyle = CONFIG.headerBorderColor;
             this.ctx.strokeRect(0, y, CONFIG.headerWidth, h);
@@ -109,6 +89,29 @@ export class GridRenderer {
             this.ctx.textAlign = CONFIG.textAlignCenter;
             this.ctx.fillText(r.toString(), CONFIG.headerWidth / 2, y + (h / 2));
             this.ctx.textAlign = CONFIG.textAlignLeft;
+        }
+
+        //draw selection
+        if (selection.hasSelection()) {
+            //get coordinates for length and width
+            const range : rangeData= selection.getRange();
+            const x : number= CONFIG.headerWidth + colModel.getColX(range.cMin) - scrollX;
+            const y : number= CONFIG.headerHeight + rowModel.getRowY(range.rMin) - scrollY;
+             // Width is the right edge of cMax minus the left edge of cMin
+            const selW :number= colModel.getColWidth(range.cMax) + colModel.getColX(range.cMax) - colModel.getColX(range.cMin);
+            // Height is the bottom edge of rMax minus the top edge of rMin
+            const selH :number= rowModel.getRowHeight(range.rMax) + rowModel.getRowY(range.rMax) - rowModel.getRowY(range.rMin);
+ 
+            //draw box for selection
+            this.ctx.fillStyle = CONFIG.selectionBg;
+            this.ctx.fillRect(x, y, selW, selH);
+            this.ctx.fillRect(x, 0, selW, CONFIG.headerHeight);
+            this.ctx.fillRect(0, y, CONFIG.headerWidth,selH);
+            this.ctx.strokeStyle = CONFIG.selectionBorder;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(x, y, selW, selH);
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeStyle = CONFIG.headerBorderColor;
         }
 
         //draw first Cell which intersect (1,2,3,...) & (A,B,C,...)

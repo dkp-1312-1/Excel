@@ -5,7 +5,6 @@ import { RowResizingHandler } from "./RowResizingHandler.js";
 import { ColumnSelectionHandler } from "./ColumnSelectionHandler.js";
 import { RowSelectionHandler } from "./RowSelectionHandler.js";
 import { CellSelectionHandler } from "./CellSelectionHandler.js";
-import { CONFIG } from "../config/Config.js";
 
 export class IdleHandler extends PointerHandler {
     onPointerDown(e: PointerEvent, data: CellEventData, cursor: string): boolean {

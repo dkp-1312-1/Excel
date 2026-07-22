@@ -26,7 +26,7 @@ export class SelectionManager
         this.endRow=row;
         this.endCol=col;
     }
-    public getRange()
+    public getRange() : rangeData
     {
         return {
             rMin:Math.min(this.startRow,this.endRow),
@@ -38,6 +38,10 @@ export class SelectionManager
     public hasSelection():boolean
     {
         return this.startRow!==-1;
+    }
+    public isSingleCell():boolean
+    {
+        return this.startRow===this.endRow && this.startCol===this.endCol;
     }
     public selectWholeColumn(col:number):void
     {
